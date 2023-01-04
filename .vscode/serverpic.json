@@ -1,0 +1,36 @@
+{
+    "dispositivo": "LoraTest",
+    "folder": "LoraTest",
+    "sketch": "LoraTest.ino",
+    "plataforma": "Heltec-esp32",
+    "version": "0.0.6",
+    "modelo": "Lora32 V2",
+    "placa": "LoRa 32 V2",
+    "fqbn": "Heltec-esp32:esp32:wifi_lora_32_V2",
+    "configuration": "DebugLevel=none,UploadSpeed=115200",
+    "compilador": "xtensa-esp32-elf-gcc",
+    "com": "COM",
+    "baudios": "Baudios",
+    "directorios": [
+        {
+            "trabajo": {
+                "dirtrabajo": "d:/Repositorios/Domo/Esp8266/Modulos Especificos/LoraTest",
+                "dirvscode": "d:/Repositorios/Domo/Esp8266/Modulos Especificos/LoraTest/.vscode",
+                "diroutput": "d:/Repositorios/Domo/Esp8266/Modulos Especificos/LoraTest/build"
+            },
+            "plataforma": {
+                "dircompilador": "xtensa-esp32-elf-gcc/1.22.0-80-g6c4433a-5.2.0"
+            },
+            "librerias": {
+                "variants": "#usuario#/AppData/Local/Arduino15/packages/Heltec-esp32/hardware/esp32/#version#/variants/wifi_lora_32_V2/",
+                "include": "#usuario#/AppData/Local/Arduino15/packages/Heltec-esp32/hardware/esp32/#version#/tools/sdk/include/",
+                "librerias": "#usuario#/AppData/Local/Arduino15/packages/Heltec-esp32/hardware/esp32/#version#/libraries/",
+                "cores": "#usuario#/AppData/Local/Arduino15/packages/Heltec-esp32/hardware/esp32/#version#/cores/esp32/",
+                "genericas": "#usuario#/#documentos#/Arduino/libraries/"
+            },
+            "forced": {
+                "forced": "#Dirusuario#/AppData/Local/Arduino15/packages/Heltec-esp32/hardware/esp32/#Version#/cores/esp32/Arduino.h"
+            }
+        }
+    ]
+}

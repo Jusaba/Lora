@@ -1,0 +1,12 @@
+*.bin
+*.pdsbak
+*.workspace
+*.DO
+*.EDF
+*.sts
+*.rte
+*.elf
+*.map
+Build/
+Master/build/
+Slave/build/
