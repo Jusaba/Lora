@@ -1,1 +1,0 @@
-arduino-cli compile -b Heltec-esp32:esp32:wifi_lora_32_V2:DebugLevel=none,UploadSpeed=115200 --build-path .\build -e -v  

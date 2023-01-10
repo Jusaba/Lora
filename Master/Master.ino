@@ -120,6 +120,7 @@ void loop() {
 				Serial.println(oLoraMensaje.Mensaje);
 				Serial.println((oLoraMensaje.Mensaje).length());
 			#endif
+			MensajeTxtRecibidodeLora(oLoraMensaje);
 		}
 
 	    long Inicio, Fin;
@@ -168,7 +169,7 @@ void loop() {
 			#endif	
 
 			TelegramaToLora(oMensaje);									//Enviamos el mensaje a Lora remoto
-
+			MensajeTxtEnviadoaLora (oMensaje);	
 
 	 		/*----------------
  			Actualizacion ultimo valor

@@ -53,7 +53,7 @@ void setup() {
 				MensajeConectadoaServerpic();
 
 				while(LoraInit() == false); 
-LoRa.receive();
+				LoRa.receive();
 		 		//-------------------------
 		 		//Cargamos la configuracion
 		 		//-------------------------
@@ -150,6 +150,7 @@ void loop() {
 				Serial.println(oMensaje.Mensaje);
 				Serial.println((oMensaje.Mensaje).length());
 			#endif
+			MensajeTxtRecibidodeLora(oLoraMensaje);
 		}
 		if ( oMensaje.lRxMensaje)										//Si se ha recibido ( oMensaje.lRsMensaje = 1)
 		{
@@ -214,6 +215,7 @@ void loop() {
 				//EnviaValor (cSalida);									//Actualizamos ultimo valor
 				//StringToLora(cSalida.c_str());
 				StringToLora (cDispositivo+"-:-"+cSalida);
+				TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
 			}
 	
 			cSalida = String(' ');										//Limpiamos cSalida para iniciar un nuevo bucle
