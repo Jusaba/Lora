@@ -149,7 +149,18 @@ void loop() {
 				Serial.println(oMensaje.Remitente);						//Ejecutamos acciones
 				Serial.println(oMensaje.Mensaje);
 				Serial.println((oMensaje.Mensaje).length());
-			#endif
+			#endif				
+			String cOrden = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Extraemos los parametros
+			String cDestinatarioLora = String(oMensaje.Mensaje).substring(0, String(oMensaje.Mensaje).indexOf("-:-"));
+			Serial.println("---------------");
+			Serial.println(cDestinatarioLora);
+			Serial.println(cOrden);
+			Serial.println("---------------");
+			if ( cDestinatarioLora == cDispositivo )
+			{
+				Serial.println("EUREKA");
+			}
+	
 			MensajeTxtRecibidodeLora(oLoraMensaje);
 		}
 		if ( oMensaje.lRxMensaje)										//Si se ha recibido ( oMensaje.lRsMensaje = 1)
