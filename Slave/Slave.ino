@@ -144,23 +144,42 @@ void loop() {
 		{
 			oMensaje = oLoraMensaje;									//Sustituimos el mensaje por el recibido por radio
 			oLoraMensaje.lRxMensaje = 0;								//Resetasmo el flag de informacion recibida por radio
+			String cOrdenLora = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Extraemos los parametros
+			String cDestinatarioLora = String(oMensaje.Mensaje).substring(0, String(oMensaje.Mensaje).indexOf("-:-"));
 	    	#ifdef Debug	
 				Serial.println("loop oLoraMensaje.lRxMensaje = 1");			
 				Serial.println(oMensaje.Remitente);						//Ejecutamos acciones
 				Serial.println(oMensaje.Mensaje);
 				Serial.println((oMensaje.Mensaje).length());
-			#endif				
-			String cOrden = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Extraemos los parametros
-			String cDestinatarioLora = String(oMensaje.Mensaje).substring(0, String(oMensaje.Mensaje).indexOf("-:-"));
-			Serial.println("---------------");
-			Serial.println(cDestinatarioLora);
-			Serial.println(cOrden);
-			Serial.println("---------------");
+				Serial.println(cDestinatarioLora);
+				Serial.println(cOrdenLora);
+			#endif		
 			if ( cDestinatarioLora == cDispositivo )
 			{
 				Serial.println("EUREKA");
+				if (cOrdenLora == "On")								//Si se recibe "On", se habilita el pir
+				{	
+					DispositivoOn();	
+					cSalida = "On";
+				}
+				if (cOrdenLora == "Off")								//Si se recibe "On", se habilita el pir
+				{	
+					DispositivoOff();	
+					cSalida = "Off";
+				}				
 			}
-	
+			
+	 		/*----------------
+ 			Contestacion al Master
+ 			------------------*/
+			if ( cSalida != String(' ') )								//Si hay cambio de estado
+			{	
+				//EnviaValor (cSalida);									//Actualizamos ultimo valor
+				//StringToLora(cSalida.c_str());
+				StringToLora (oMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);
+				TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
+			}	
+			cSalida = String(' ');				
 			MensajeTxtRecibidodeLora(oLoraMensaje);
 		}
 		if ( oMensaje.lRxMensaje)										//Si se ha recibido ( oMensaje.lRsMensaje = 1)

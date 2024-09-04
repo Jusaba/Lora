@@ -233,7 +233,7 @@
 	*/
 	boolean GetDispositivo (void)
 	{
-
+		return (lEstado);
     }   
 	/**
 	******************************************************
@@ -242,7 +242,7 @@
 	*/
 	void DispositivoOn (void)
 	{
-
+		lEstado = 1;
 	}
 	/**
 	******************************************************
@@ -251,7 +251,7 @@
 	*/
 	void DispositivoOff (void)
 	{
-
+		lEstado = 0;
 	}    
 	//----------------------------
 	//Funciones Particulares

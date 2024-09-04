@@ -57,17 +57,20 @@
 
 		int lora_rssi = LoRa.packetRssi();
         
-        LineasDisplay.Linea4 = "Lora->Serverpic";
-        LineasDisplay.Linea5 = oMensajeLora.Remitente+"-:-"+oMensajeLora.Mensaje;
+        String cDestinatario = String (oMensajeLora.Mensaje).substring(0,  String(oMensajeLora.Mensaje).indexOf("-:-") );
+        LineasDisplay.Linea4 =  cDestinatario+"->LoraM";
+        LineasDisplay.Linea5 = oMensajeLora.Destinatario+'-:-'+oMensajeLora.Mensaje;
         LineasDisplay.Linea6 = "RSSI: " + (String) lora_rssi;
         WritePantalla();
  	}    
 
     void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora )
     {
-        LineasDisplay.Linea1 = "Serverpic->Lora";
+        String cDestinatario =  String (oMensajeLora.Mensaje).substring(0,  String(oMensajeLora.Mensaje).indexOf("-:-") );
+        String cMensaje = String(oMensajeLora.Mensaje).substring(  3 + String(oMensajeLora.Mensaje).indexOf("-:-"),  String(oMensajeLora.Mensaje).length() ); 
+        LineasDisplay.Linea1 = "LoraM->"+cDestinatario;
         LineasDisplay.Linea2 = "Remitente: " + oMensajeLora.Remitente;
-        LineasDisplay.Linea3 = "Mensaje: " + oMensajeLora.Mensaje;
+        LineasDisplay.Linea3 = "Mensaje: " + cMensaje;
         WritePantalla();
     }
 

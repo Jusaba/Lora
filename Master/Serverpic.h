@@ -114,6 +114,10 @@
 
 
 	//----------------------------------------------
+	//DISPLAY
+	//----------------------------------------------
+	#define Display
+	//----------------------------------------------
 	//DEBUG
 	//----------------------------------------------
 	//#define Debug
@@ -137,10 +141,7 @@
 	//----------------------------------------------
 	//Declaracion de funciones Universales
 	//----------------------------------------------
-	boolean GetDispositivo (void);
-	void DispositivoOff (void);
-	void DispositivoOn (void);
-
+	
 	//----------------------------------------------
 	//Declaracion de funciones Particulares
 	//----------------------------------------------
@@ -225,34 +226,7 @@
 	//----------------------------
 	//Funciones Universales
 	//----------------------------	
-	/**
-	******************************************************
-	* @brief Devielve el estado del dispositivo
-	*
-	* @return devuelve <b>1</b> si el dispositivo esta conectado o <b>0<\b> en caso de que no este conectado
-	*/
-	boolean GetDispositivo (void)
-	{
-
-    }   
-	/**
-	******************************************************
-	* @brief Pone el dispositivo en On
-	*
-	*/
-	void DispositivoOn (void)
-	{
-
-	}
-	/**
-	******************************************************
-	* @brief Pone el dispositivo en OPff
-	*
-	*/
-	void DispositivoOff (void)
-	{
-
-	}    
+	
 	//----------------------------
 	//Funciones Particulares
 	//----------------------------	

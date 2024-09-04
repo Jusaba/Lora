@@ -213,7 +213,7 @@
 	{
 		Telegrama oTelegrama;
 		oTelegrama.Remitente = String(cTexto).substring( 0, String(cTexto).indexOf("-:-") );
-	    if ( (oTelegrama.Remitente).indexOf("OK") == 0 )                                          //Cuando se recibe OK desde el servidor por una accion bien realizada, solo se recibe OK, no se recibe remitente
+	    if ( (oTelegrama.Remitente).indexOf("OK") == 0 )                                      //Cuando se recibe OK desde el servidor por una accion bien realizada, solo se recibe OK, no se recibe remitente
       	{                                                                                     //El OK lo envia solo y por tanto es el campo 0 del mensaje recibido y se coloca en remitente
           oTelegrama.Remitente = "Servidor";
           oTelegrama.Mensaje = "OK";   

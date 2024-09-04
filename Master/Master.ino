@@ -76,21 +76,19 @@ void setup() {
     			cSalida = LeeValor();													//Recuperamos con el ultimo valor
       			if ( cSalida == "ERROR")												//Si no habia ultimo valor, arrancamos con On
       			{
-      				DispositivoOn();
-      			}else{																	//Si existia ultimo valor, arrancamos con el valor registrado
+       			}else{																	//Si existia ultimo valor, arrancamos con el valor registrado
       				if (cSalida == "On")
       				{
-      					DispositivoOn();
-      				}
       				if (cSalida == "Off")
       				{
-      					DispositivoOff();
       				}	
 
       			}	
     		}
     	}	
-	}
+
+		}
+	}	
 }
 
 
@@ -101,30 +99,30 @@ void loop() {
 
 	/*----------------
 	Analisis Lora
- 	------------------*/
-
-/*
-		String cTexto = TestRecepcionLora();
-		if (cTexto.length()>0)
+ 	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
+	Confeccionamos el mensaje hacia Serverpic y lo enviamos a Serverpic
+		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Serverpic
+		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
+	------------------*/
+	
+		if (oLoraMensaje.lRxMensaje)								//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
 		{
-			MensajeTxtRecibidodeLora(cTexto);						//Actualizamos display
-			MensajeServidor (cTexto.c_str());						//Mandamos al servidor el mensaje recibido del Lora remoto
-		}
-*/
-		if (oLoraMensaje.lRxMensaje)									//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
-		{
-			oLoraMensaje.lRxMensaje = 0;								//Resetasmo el flag de informacion recibida por radio			
+			oLoraMensaje.lRxMensaje = 0;							//Resetasmo el flag de informacion recibida por radio			
 	    	#ifdef Debug	
 				Serial.println("loop oLoraMensaje.lRxMensaje = 1");			
-				Serial.println(oLoraMensaje.Remitente);						//Ejecutamos acciones
+				Serial.println(oLoraMensaje.Remitente);				//Ejecutamos acciones
 				Serial.println(oLoraMensaje.Mensaje);
 				Serial.println((oLoraMensaje.Mensaje).length());
 			#endif
-			MensajeTxtRecibidodeLora(oLoraMensaje);
+			oMensaje.Mensaje = oLoraMensaje.Mensaje;				//Confeccionamos el mensaje a enviar hacia el servidor	
+			oMensaje.Destinatario = oLoraMensaje.Remitente;
+			EnviaMensaje(oMensaje);									//Y lo enviamos
+			#ifdef Display	
+				MensajeTxtRecibidodeLora(oLoraMensaje);
+			#endif
 		}
 
-	    long Inicio, Fin;
-
+	 
  		/*----------------
  		Comprobacion Reset
  		------------------*/
@@ -167,9 +165,17 @@ void loop() {
 				Serial.println(oMensaje.Remitente);						//Ejecutamos acciones
 				Serial.println(oMensaje.Mensaje);
 			#endif	
-
-			TelegramaToLora(oMensaje);									//Enviamos el mensaje a Lora remoto
-			MensajeTxtEnviadoaLora (oMensaje);	
+			//Si el mensaje empieza con '#R-:-' es un mensaje dirigido a un remoto
+			// El formato para los remotos es 'mensaje-:-<Maestro>-:-#R-:-<Nombre remoto>-:-Orden 
+			if ((oMensaje.Mensaje).indexOf("#R-:-") == 0)				//Si el inicio del mensaje es #R es mensaje para enviar a los remotos
+			{
+				oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Extraemos el mensaje excluyendo el #R
+				TelegramaToLora(oMensaje);								//Enviamos el mensaje a Lora remoto
+				#ifdef Display
+					MensajeTxtEnviadoaLora (oMensaje);	
+				#endif	
+			}	 
+			//Si el mensaje #R-:- se tratará como un mensaje local
 
 	 		/*----------------
  			Actualizacion ultimo valor
