@@ -27,12 +27,19 @@
 
     void MensajeInicio (void);
     void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora );
+    void TextoEnviadoaLora ( String cTexto );
     void MensajeConectadoaServerpic (void);
     void MensajeTxtRecibidodeLora ( String cTexto );
-    void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora );
     void BorraPantallaTx (void);
     void BorraPantallaRx (void);
     void WritePantalla (void);
+    void LimpiaPantalla (void);
+    void VisualizaPantalla (void);
+    void MensajeDispositivo (String cUtilizacion );
+    void MensajeOn ();
+    void MensajeOff ();
+    void MensajeHora (int nSegundos, int nMinutos, int nHoras );
+
 
     void MensajeInicio (void)
     {
@@ -73,10 +80,92 @@
 
     void TextoEnviadoaLora ( String cTexto )
     {
-        LineasDisplay.Linea1 = "Dispositivo->Lora";
+        LineasDisplay.Linea1 = "Dispositivo->LoraM";
         LineasDisplay.Linea2 = "Mensaje: " + cTexto;
         LineasDisplay.Linea3 = " ";
         WritePantalla();
+    }
+    void LimpiaPantalla (void)
+    {
+        display.clearDisplay();
+    }
+    void VisualizaPantalla (void)
+    {
+        display.display();
+        display.setTextSize(1);
+    }
+    void MensajeDispositivo (String cUtilizacion )
+    {
+        display.setTextSize(2);
+        LineasDisplay.Linea1 = cUtilizacion;
+        display.setCursor(40, OLED_LINE1);     
+        display.print(LineasDisplay.Linea1);
+    }
+    void MensajeOn ()
+    {
+        display.setTextSize(2); 
+        LineasDisplay.Linea4 = "On";
+        display.setCursor(45, OLED_LINE4);
+        display.print(LineasDisplay.Linea4);
+    }
+    void MensajeOff ()
+    {
+        display.setTextSize(2); 
+        LineasDisplay.Linea4 = "Off";
+        display.setCursor(45, OLED_LINE4);
+        display.print(LineasDisplay.Linea4);
+    }
+
+    void MensajeHora (int nSegundos, int nMinutos, int nHoras )
+    {
+        display.setTextSize(2);
+        String cHoras = String(nHoras);
+        String cMinutos = String(nMinutos);
+        String cSegundos = String(nSegundos); 
+        if (cHoras.length() == 1)
+        {
+            cHoras = "0"+cHoras;
+        }
+        if (cMinutos.length() == 1)
+        {
+            cMinutos = "0"+cMinutos;
+        }
+        if (cSegundos.length() == 1)
+        {
+            cSegundos = "0"+cSegundos;
+        }
+
+        LineasDisplay.Linea6 = cHoras+":"+cMinutos+":"+cSegundos;
+        display.setCursor(15, OLED_LINE6);   
+        display.print(LineasDisplay.Linea6);
+    }
+
+void MensajeOnTemporizado (int nSegundos, int nMinutos, int nHoras )
+    {
+        display.setTextSize(3); 
+        LineasDisplay.Linea2 = "On";
+        display.setCursor(40, OLED_LINE2);
+        display.print(LineasDisplay.Linea2);
+        display.setTextSize(2);
+        String cHoras = String(nHoras);
+        String cMinutos = String(nMinutos);
+        String cSegundos = String(nSegundos); 
+        if (cHoras.length() == 1)
+        {
+            cHoras = "0"+cHoras;
+        }
+        if (cMinutos.length() == 1)
+        {
+            cMinutos = "0"+cMinutos;
+        }
+        if (cSegundos.length() == 1)
+        {
+            cSegundos = "0"+cSegundos;
+        }
+
+        LineasDisplay.Linea5 = cHoras+":"+cMinutos+":"+cSegundos;
+        display.setCursor(15, OLED_LINE5);   
+        display.print(LineasDisplay.Linea5);
     }
 
     void WritePantalla (void)

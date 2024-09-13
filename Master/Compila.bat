@@ -1,1 +1,1 @@
-arduino-cli compile -b Heltec-esp32:esp32:wifi_lora_32_V2 --build-path build -e -v
+arduino-cli compile -b Heltec-esp32:esp32:wifi_lora_32 --build-path build -e -v

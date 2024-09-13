@@ -25,13 +25,14 @@ void setup() {
 		Serial.begin(9600);																//Si no debugamos quedan libres los pines Tx, Rx para set urilizados
 		Serial.println("Iniciando........");
 	#endif
-	EEPROM.begin(2568);																	//Reservamos zona de EEPROM
+	EEPROM.begin(256);																	//Reservamos zona de EEPROM
 	//BorraDatosEprom ( 0, 256 );														//Borramos 128 bytes empezando en la posicion 0		
 
   	//Declaracion de Entradas/Salidas
 	//pinMode(PinReset, INPUT_PULLUP);           											//Configuramos el pin de reset como entrada 
-
-	MensajeInicio();
+	#ifdef Display
+		MensajeInicio();
+	#endif
 
 	if ( LeeByteEprom ( FlagConfiguracion ) == 0 )										//Comprobamos si el Flag de configuracion esta a 0
 	{																					// y si esta
@@ -47,9 +48,9 @@ void setup() {
         			Serial.println("Conectado al servidor");
       			#endif 
       			cSalida = " " ;															//Inicializamos cSalida
-
-				MensajeConectadoaServerpic();
-
+				#ifdef Display
+					MensajeConectadoaServerpic();
+				#endif
 				while(LoraInit() == false); 
 				LoRa.receive();
 		 		//-------------------------
@@ -79,13 +80,13 @@ void setup() {
        			}else{																	//Si existia ultimo valor, arrancamos con el valor registrado
       				if (cSalida == "On")
       				{
+					}	
       				if (cSalida == "Off")
       				{
       				}	
-
-      			}	
-    		}
-    	}	
+	
+	    		}
+    		}	
 
 		}
 	}	
@@ -101,7 +102,7 @@ void loop() {
 	Analisis Lora
  	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
 	Confeccionamos el mensaje hacia Serverpic y lo enviamos a Serverpic
-		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Serverpic
+		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Lora
 		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
 	------------------*/
 	

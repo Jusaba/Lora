@@ -6,6 +6,7 @@
 * @version 1.0
 * @date 12/25/2022
 *******************************************************/
+//https://vasanza.blogspot.com/2021/08/esp32-real-time-clock-rtc-interno.html
 
 #ifndef SERVERPIC_H
 	#define SERVERPIC_H
@@ -56,6 +57,7 @@
     #include <Adafruit_SSD1306.h>
     //Fin librerias LoRa 32
     
+	#include <ESP32Time.h>
 	#include "Mensajes.h"
 	
 
@@ -116,8 +118,14 @@
 	//----------------------------------------------
 	//DEBUG
 	//----------------------------------------------
-	//#define Debug
+	#define Debug
 	
+	//----------------------------------------------
+	//Display
+	//----------------------------------------------
+	//#define Display
+
+
     //----------------------------------------------
 	//HOME KIT
 	//----------------------------------------------
@@ -129,9 +137,14 @@
 	#define WebSocket	
 	
     //----------------------------------------------
-	//Teimpo de Test de conexion
+	//Tiempo de Test de conexion
 	//----------------------------------------------
 	#define TiempoTest	15000												//Tiempo en milisegundos para Test de conexion a servidor
+
+    //----------------------------------------------
+	//Declaracion reloj tiempo real
+	//----------------------------------------------
+	ESP32Time rtc;
 
 
 	//----------------------------------------------
@@ -140,6 +153,12 @@
 	boolean GetDispositivo (void);
 	void DispositivoOff (void);
 	void DispositivoOn (void);
+
+	void SetHora ( int nSg, int nMinutos, int nHora );
+	void SetFecha ( int nDia, int nMes, int nAno );
+	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );
+	void SegundosToHHMMSS ( int nSegundosTot );
+
 
 	//----------------------------------------------
 	//Declaracion de funciones Particulares
@@ -171,10 +190,17 @@
 	
 	boolean lFlagInterrupcion = 0;                							//Flag para indicar a loop() que ha habido pulsacion
 	
+	int nSegundosTime = 0;	
+	int nMinutosOn = 0;
+	int nSegundosOn = 0;
+	int nSegundosCiclo = 0;
+	int nSegundosCicloDif = 0;
+	boolean lTemporizado = 0;
 
-		 //------------------------------------
+		//------------------------------------
 	    //Declaracion de variables Particulares
 	    //------------------------------------
+		
 		//------------------------------
 		// Definiciones de pantalla OLED 
 		//------------------------------
@@ -194,6 +220,8 @@
 		#define OLED_LINE4     30
 		#define OLED_LINE5     40
 		#define OLED_LINE6     50
+
+
 	
 	 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -243,6 +271,7 @@
 	void DispositivoOn (void)
 	{
 		lEstado = 1;
+		MensajeOn();
 	}
 	/**
 	******************************************************
@@ -252,10 +281,56 @@
 	void DispositivoOff (void)
 	{
 		lEstado = 0;
-	}    
+		MensajeOff();
+	}   
+
+	void SetHora ( int nSg, int nMinutos, int nHora )
+	{
+		int nDia = rtc.getDay();
+		int nMes = rtc.getMonth();
+		if ( nMes == 0 )
+		{
+			nMes = 1;
+		}
+		int nAno = rtc.getYear();
+		Serial.print ("Dia: ");
+		Serial.println ( nDia );
+		Serial.print ("Mes: ");
+		Serial.println ( nMes );
+		Serial.print ("Año: ");
+		Serial.println ( nAno );
+
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+	} 
+	void SetFecha ( int nDia, int nMes, int nAno )
+	{
+		int nSg = rtc.getSecond();
+		int nMinutos = rtc.getMinute();
+		int nHora = rtc.getHour(true);
+		Serial.print ("Segundos: ");
+		Serial.println ( nSg );
+		Serial.print ("Minutos: ");
+		Serial.println ( nMinutos );
+		Serial.print ("Hora: ");
+		Serial.println ( nHora );
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+	}
+	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno )
+	{
+		rtc.setTime ( nSg, nMinutos, nHora, nDia, nMes, nAno );
+	}
+	void SegundosToHHMMSS ( int nSegundosTot )
+	{
+		int nSegundosTemp = nSegundosTot;
+		int nHoras = nSegundosTemp / 3600;
+		nSegundosTemp = nSegundosTemp - ( nHoras * 3600 );
+		int nMinutos = nSegundosTemp / 60;
+		int nSegundos = nSegundosTemp - ( nMinutos * 60 );
+		MensajeOnTemporizado ( nSegundos, nMinutos, nHoras );
+	}
 	//----------------------------
 	//Funciones Particulares
-	//----------------------------	
+	//----------------------------
 
 
 

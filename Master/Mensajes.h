@@ -29,7 +29,6 @@
     void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora );
     void MensajeConectadoaServerpic (void);
     void MensajeTxtRecibidodeLora ( String cTexto );
-    void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora );
     void BorraPantallaTx (void);
     void BorraPantallaRx (void);
     void WritePantalla (void);
@@ -59,7 +58,7 @@
         
         String cDestinatario = String (oMensajeLora.Mensaje).substring(0,  String(oMensajeLora.Mensaje).indexOf("-:-") );
         LineasDisplay.Linea4 =  cDestinatario+"->LoraM";
-        LineasDisplay.Linea5 = oMensajeLora.Destinatario+'-:-'+oMensajeLora.Mensaje;
+        LineasDisplay.Linea5 = oMensajeLora.Remitente+"-:-"+oMensajeLora.Mensaje;
         LineasDisplay.Linea6 = "RSSI: " + (String) lora_rssi;
         WritePantalla();
  	}    
