@@ -56,6 +56,8 @@
     #include <Adafruit_SSD1306.h>
     //Fin librerias LoRa 32
     
+	#include <ESP32Time.h>
+
 	#include "Mensajes.h"
 	
 
@@ -80,7 +82,7 @@
 	#ifdef LoRa_32_V2
 		#define Placa "LoRa 32 V2"
 		#define Modelo ","
-		#define Ino "LoraTest"					
+		#define Ino "Master"					
 		//------------
 		//Pulsador-LED 
 		//------------	
@@ -137,11 +139,18 @@
 	//----------------------------------------------
 	#define TiempoTest	15000												//Tiempo en milisegundos para Test de conexion a servidor
 
-
+    //----------------------------------------------
+	//Declaracion reloj tiempo real
+	//----------------------------------------------
+	ESP32Time rtc;
+	
 	//----------------------------------------------
 	//Declaracion de funciones Universales
 	//----------------------------------------------
-	
+	void SetHora ( int nSg, int nMinutos, int nHora );
+	void SetFecha ( int nDia, int nMes, int nAno );
+	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );
+
 	//----------------------------------------------
 	//Declaracion de funciones Particulares
 	//----------------------------------------------
@@ -172,6 +181,11 @@
 	
 	boolean lFlagInterrupcion = 0;                							//Flag para indicar a loop() que ha habido pulsacion
 
+	int nSegundosTime = 0;	
+	int nSegundosCiclo = 0;
+	int nSegundosCicloDif = 0;
+
+	boolean lInicio = 0;
 
 		 //------------------------------------
 	    //Declaracion de variables Particulares
@@ -226,6 +240,41 @@
 	//----------------------------
 	//Funciones Universales
 	//----------------------------	
+	void SetHora ( int nSg, int nMinutos, int nHora )
+	{
+		int nDia = rtc.getDay();
+		int nMes = rtc.getMonth();
+		if ( nMes == 0 )
+		{
+			nMes = 1;
+		}
+		int nAno = rtc.getYear();
+		Serial.print ("Dia: ");
+		Serial.println ( nDia );
+		Serial.print ("Mes: ");
+		Serial.println ( nMes );
+		Serial.print ("Año: ");
+		Serial.println ( nAno );
+
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+	} 
+	void SetFecha ( int nDia, int nMes, int nAno )
+	{
+		int nSg = rtc.getSecond();
+		int nMinutos = rtc.getMinute();
+		int nHora = rtc.getHour(true);
+		Serial.print ("Segundos: ");
+		Serial.println ( nSg );
+		Serial.print ("Minutos: ");
+		Serial.println ( nMinutos );
+		Serial.print ("Hora: ");
+		Serial.println ( nHora );
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+	}
+	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno )
+	{
+		rtc.setTime ( nSg, nMinutos, nHora, nDia, nMes, nAno );
+	}
 	
 	//----------------------------
 	//Funciones Particulares

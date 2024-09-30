@@ -58,6 +58,7 @@
     //Fin librerias LoRa 32
     
 	#include <ESP32Time.h>
+
 	#include "Mensajes.h"
 	
 
@@ -82,7 +83,7 @@
 	#ifdef LoRa_32_V2
 		#define Placa "LoRa 32 V2"
 		#define Modelo ","
-		#define Ino "LoraTest"					
+		#define Ino "Slave"					
 		//------------
 		//Pulsador-LED 
 		//------------	
@@ -139,12 +140,13 @@
     //----------------------------------------------
 	//Tiempo de Test de conexion
 	//----------------------------------------------
-	#define TiempoTest	15000												//Tiempo en milisegundos para Test de conexion a servidor
+	#define TiempoTest	120000												//Tiempo en milisegundos para Test de conexion a servidor
 
     //----------------------------------------------
 	//Declaracion reloj tiempo real
 	//----------------------------------------------
 	ESP32Time rtc;
+	
 
 
 	//----------------------------------------------
@@ -163,7 +165,6 @@
 	//----------------------------------------------
 	//Declaracion de funciones Particulares
 	//----------------------------------------------
-	
 
 	//------------------------------------
 	//Declaracion de variables Universales
@@ -190,12 +191,14 @@
 	
 	boolean lFlagInterrupcion = 0;                							//Flag para indicar a loop() que ha habido pulsacion
 	
-	int nSegundosTime = 0;	
+	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
 	int nMinutosOn = 0;
-	int nSegundosOn = 0;
-	int nSegundosCiclo = 0;
-	int nSegundosCicloDif = 0;
-	boolean lTemporizado = 0;
+	int nSegundosOn = 0;													//Variable con los segunods de temporizacion
+	int nSegundosCiclo = 0;													//Variable donde se almacena los segundos actuales del RTC
+	int nSegundosCicloDif = 0;												//Diferencia de segundos entre el momento actual y la comprobacion anterior
+	boolean lTemporizado = 0;												//Flag para indicar si hay un proceso temporizado ( On por ejemlo )
+
+	boolean lInicio = 0;
 
 		//------------------------------------
 	    //Declaracion de variables Particulares

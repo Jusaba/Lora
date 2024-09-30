@@ -28,13 +28,7 @@ void setup() {
 	Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);												//Inicializamos 1Wire
     DisplayInit();																		//Inicializamos la pantalla
 
-	//rtc.setTime ( 0, 59, 23, 12, 9, 2024 );
 
-	SetHora(0, 59, 23);
-	SetFecha ( 12, 9, 2024 );
-	//SetHora(0, 59, 23);
-	//SetFecha ( 12, 9, 2024 );
-	//SetHoraFecha ( 0, 59, 23, 12, 9, 2024 );
 
 	//BorraDatosEprom ( 0, 256 );														//Borramos 128 bytes empezando en la posicion 0		
 
@@ -88,6 +82,7 @@ void setup() {
 					GrabaVariable ("inicios", 1 + LeeVariable("inicios") );
 				}
 
+				lInicio = 1;															//Flag que indica si se ha conectado a Serverpic
 
     			cSalida = LeeValor();													//Recuperamos con el ultimo valor
       			if ( cSalida == "ERROR")												//Si no habia ultimo valor, arrancamos con On
@@ -108,40 +103,41 @@ void setup() {
 
 void loop() {
 
-	nSegundosCiclo = rtc.getSecond();
-	if ( nSegundosTime != nSegundosCiclo )
+	//Controlamos un On Temporizado
+	nSegundosCiclo = rtc.getSecond();											//Actualizamos la variable nSegundoCiclo con los segundos de RTC
+	if ( nSegundosTime != nSegundosCiclo )										//Si se ha cambiado de segundo en l RTC
 	{
-		if ( nSegundosCiclo < nSegundosTime )	
-		{
-			nSegundosCicloDif = ( 60 - nSegundosTime) + nSegundosCiclo;
+		if ( nSegundosCiclo < nSegundosTime )									//Miramos si RTC ha cambiado de minuto para calcular los segundos reales transcurridos		
+		{																		// y almacenamos los segundos transcurridos en nSegundosCicloDif
+			nSegundosCicloDif = ( 60 - nSegundosTime) + nSegundosCiclo;			
 		}else{
 			nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
 		}
-		nSegundosTime = nSegundosCiclo;
-		LimpiaPantalla();		
-		if ( !lTemporizado )
+		nSegundosTime = nSegundosCiclo;											//Actualiamos nSegundosTime con el segundo actual para la siguiente comprobacion
+		LimpiaPantalla();														//Borramos la pantalla
+		if ( !lTemporizado )													//Si no hay proceso temporizado
 		{
-			if ( lEstado )
-			{
-				MensajeOn();
-			}else{
-				MensajeDispositivo (cDispositivo);
+			if ( lEstado )															//Si es estado On
+			{	
+				MensajeOn();															//Preparamos el mensaje On para la pantalla											
+			}else{																		//Si el Estado es Off
+				MensajeDispositivo (cDispositivo);										//Preparamos el mensaje de Dispositibo + Hora ( estado en espera )
 				//MensajeOff();
 				MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
 			}
-		}else{
-			SegundosToHHMMSS (nSegundosOn);
-			nSegundosOn = nSegundosOn - nSegundosCicloDif;
-			if ( nSegundosOn <  1)
+		}else{																		//Si es estado Off						
+			SegundosToHHMMSS (nSegundosOn);											//Visualizamos en pantalla el tiempo restante del temporizado en HH:MM:SS
+			nSegundosOn = nSegundosOn - nSegundosCicloDif;							//Actualizamos los segundos que quedan de temporizacion
+			if ( nSegundosOn <  1)													//Si se ha llegado al final de la temporizacion
 			{
-				lTemporizado = 0;
-				LimpiaPantalla();
-				MensajeDispositivo (cDispositivo);
-				DispositivoOff();
+				lTemporizado = 0;													//Ponemos el flag de temporizacion a 0
+				LimpiaPantalla();													//Limpiamos la pantalla
+				DispositivoOff();													//Ponemos el dispositivo en Off
+				MensajeDispositivo (cDispositivo);									//y dejamos en pantalla el mensaje de en espera
 				MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
 			}
 		}	
-		VisualizaPantalla();
+		VisualizaPantalla();														//Visualizamos el mensaje elaborado
 	}	
 
 	/*----------------
@@ -150,6 +146,14 @@ void loop() {
 	Confeccionamos el mensaje hacia Serverpic y lo enviamos a Serverpic
 		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Lora
 		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
+
+		Mensajes validos:
+			On.- Pone el dispositivo en On
+			On-:-N.- Pone el dispositivo en On durante N minutos
+			Off.- Pone el dispositivo en Off
+			Get.- Devuelve el estado del dispositivo
+			fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
+			Reset.- Resetea el modulo
 	------------------*/
 	if (oLoraMensaje.lRxMensaje)									//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
 	{
@@ -166,7 +170,7 @@ void loop() {
 		#endif		
 		if ( cDestinatarioLora == cDispositivo )
 		{
-			if (cOrdenLora.indexOf("On") == 0)									//Si se recibe "On", se habilita el pir
+			if (cOrdenLora.indexOf("On") == 0)									//Si se recibe "On"
 			{	
 
 				if (cOrdenLora.indexOf("On-:-") == 0)				//Si hay parametro de duracion de minutos
@@ -180,7 +184,7 @@ void loop() {
 				}					
 				cSalida = "On";
 			}
-			if (cOrdenLora == "Off")								//Si se recibe "Off", se habilita el pir
+			if (cOrdenLora == "Off")								//Si se recibe "Off"
 			{	
 				if (lTemporizado )
 				{
@@ -189,7 +193,7 @@ void loop() {
 				DispositivoOff();	
 				cSalida = "Off";
 			}	
-			if (cOrdenLora == "Get")								//Si se recibe "Get", se habilita el pir
+			if (cOrdenLora == "Get")								//Si se recibe "Get"
 			{	
 				if ( GetDispositivo() )
 				{
@@ -199,14 +203,29 @@ void loop() {
 				}	
 				
 			}				
-			if (cOrdenLora.indexOf("Hora-:-") == 0)								//Si se recibe 'Hora'
+			if (cOrdenLora.indexOf("fecha-:-") == 0)				//Si se recibe "Fecha"
 			{
 				String cMensaje =  String(cOrdenLora).substring(  3 + String(cOrdenLora).indexOf("-:-"),  String(cOrdenLora).length() );
+				String cDia = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cMes = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cAno = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
 				String cHora = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
 				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
 				String cMinutos = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
 				String cSegundos = String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
 				SetHora (cSegundos.toInt(), cMinutos.toInt(), cHora.toInt());
+				SetFecha (cDia.toInt(), cMes.toInt(), cAno.toInt());
+			}		
+			if (cOrdenLora == "Reset")								//Si se recibe "Reset"
+			{	
+				Reset();				
+			}									
+			if (cOrdenLora == "Master")								//Si se recibe "Reset"
+			{	
+				nMiliSegundosTest = millis();				
 			}							
 		}
 		#ifdef Display			
@@ -215,9 +234,9 @@ void loop() {
 		/*----------------
  		Contestacion al Master
  		------------------*/
-		if ( cSalida != String(' ') )								//Si hay cambio de estado
+		if ( cSalida != String(' ') )													//Si hay algo que comunicar
 		{	
-			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);
+			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se le notifica al Lora Remitente
 			#ifdef Display
 				//TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
 				MensajeTxtEnviadoaLora (oLoraMensaje);
@@ -239,28 +258,31 @@ void loop() {
  		---------------------*/
 		if ( TiempoTest > 0 )
 		{
-			if ( millis() > ( nMiliSegundosTest + TiempoTest ) )			//Comprobamos si existe conexion  
+			if ( millis() > ( nMiliSegundosTest + TiempoTest ) )			//Comprobamos si se ha perdiod la conexion con el Master 
 			{
 
-				nMiliSegundosTest = millis();
-				if ( !TestConexion(lEstadisticas) )							//Si se ha perdido la conexion
-				{
-					lConexionPerdida = 1;									//Ponemos el flag de perdida conexion a 1
-					//Acciones que se desean ejecutar cuando 
-					//se pierde conexion														
-				}else{														//Si existe conexion
-					if ( lConexionPerdida )									//Comprobamos si es una reconexion ( por perdida anterior )
-					{														//Si lo es
-						lConexionPerdida = 0;								//Reseteamos flag de reconexion
-						//Acciones que se desean ejecutar cuando 
-						//se recupera la conexion																			
-					}	
-				}	
+				Reset();
  	   		}	
     	}
- 	
+
+		if (lInicio)														//Si ha arrancado y se ha conectado al servidor
+		{
+			lInicio = 0;													//Reseteamos el flag lInicio para que no se repta este proceso
+			MensajeServidor ("fecha-:-"+cDispositivo);						//Solicitamos la hora al servidor
+		}
+
  		/*----------------
  		Analisis comandos
+
+		Comandos validos
+
+			On.- Pone el dispositivo en On
+			Off.- Pone el dispositivo en Off
+			Get.- Devuelve el estado del dispositivo
+			Change.- El disisitivo cambia de estado
+			ChangeGet.- El disisitivo cambia de estado y devuelve el nuevo estado
+			fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
+
  		------------------*/
 		//Serial.println(oMensaje.lRxMensaje);
 
@@ -320,13 +342,28 @@ void loop() {
 				EnviaMensaje(oMensaje);	
 				cSalida = String(' ');									//No ha habido cambio de estado, Vaciamos cSalida para que no se envie a WebSocket y a HomeKit 
 			}	
-
+			if ((oMensaje.Mensaje).indexOf("fecha-:-") == 0)								//Si se recibe 'Hora'
+			{
+				String cMensaje =  String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
+				String cDia = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cMes = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cAno = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cHora = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cMinutos = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				String cSegundos = String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				SetHora (cSegundos.toInt(), cMinutos.toInt(), cHora.toInt());
+				SetFecha (cDia.toInt(), cMes.toInt(), cAno.toInt());
+			}		
 	 		/*----------------
  			Actualizacion ultimo valor
  			------------------*/
 			if ( cSalida != String(' ') )								//Si hay cambio de estado
 			{	
-				//EnviaValor (cSalida);									//Actualizamos ultimo valor
+				EnviaValor (cSalida);									//Actualizamos ultimo valor
 			}
 	
 			cSalida = String(' ');										//Limpiamos cSalida para iniciar un nuevo bucle

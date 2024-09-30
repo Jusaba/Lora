@@ -73,6 +73,7 @@ void setup() {
 					GrabaVariable ("inicios", 1 + LeeVariable("inicios") );
 				}
 
+				lInicio = 1;
 
     			cSalida = LeeValor();													//Recuperamos con el ultimo valor
       			if ( cSalida == "ERROR")												//Si no habia ultimo valor, arrancamos con On
@@ -96,8 +97,22 @@ void setup() {
 void loop() {
 
     
-    
+	nSegundosCiclo = rtc.getSecond();
+	if ( nSegundosTime != nSegundosCiclo )
+	{
+		if ( nSegundosCiclo < nSegundosTime )	
+		{
+			nSegundosCicloDif = ( 60 - nSegundosTime) + nSegundosCiclo;
+		}else{
+			nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
+		}
+		nSegundosTime = nSegundosCiclo;
+		LimpiaPantalla();		
 
+		MensajeDispositivo (cDispositivo);
+		MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
+		VisualizaPantalla();
+	}
 	/*----------------
 	Analisis Lora
  	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
@@ -154,7 +169,12 @@ void loop() {
 				}	
  	   		}	
     	}
- 	
+		if (lInicio)														//Si ha arrancado y se ha conectado al servidor
+		{
+			lInicio = 0;													//Reseteamos el flag lInicio para que no se repta este proceso
+			MensajeServidor ("fecha-:-"+cDispositivo);						//Solicitamos la hora al servidor
+		}
+
  		/*----------------
  		Analisis comandos
  		------------------*/
@@ -176,6 +196,28 @@ void loop() {
 					MensajeTxtEnviadoaLora (oMensaje);	
 				#endif	
 			}	 
+			if ((oMensaje.Mensaje).indexOf("fecha-:-") == 0)								//Si se recibe 'Hora'
+			{
+				String cMensaje =  String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
+				String cDia = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cMes = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cAno = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cHora = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				cMensaje =  String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				String cMinutos = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
+				String cSegundos = String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
+				SetHora (cSegundos.toInt(), cMinutos.toInt(), cHora.toInt());
+				SetFecha (cDia.toInt(), cMes.toInt(), cAno.toInt());
+Serial.println("Suuuuuuuuuuuuuuuuuuuuuuuuuuu");
+oMensaje.Remitente = cDispositivo;
+oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
+Serial.println (oMensaje.Remitente+"-:-"+oMensaje.Mensaje);
+				TelegramaToLora(oMensaje);
+
+			}					
 			//Si el mensaje #R-:- se tratará como un mensaje local
 
 	 		/*----------------
