@@ -187,6 +187,7 @@
 
 	boolean lInicio = 0;
 
+
 		 //------------------------------------
 	    //Declaracion de variables Particulares
 	    //------------------------------------

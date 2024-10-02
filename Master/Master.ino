@@ -96,23 +96,28 @@ void setup() {
 
 void loop() {
 
-    
-	nSegundosCiclo = rtc.getSecond();
-	if ( nSegundosTime != nSegundosCiclo )
-	{
-		if ( nSegundosCiclo < nSegundosTime )	
-		{
-			nSegundosCicloDif = ( 60 - nSegundosTime) + nSegundosCiclo;
-		}else{
-			nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
-		}
-		nSegundosTime = nSegundosCiclo;
-		LimpiaPantalla();		
 
-		MensajeDispositivo (cDispositivo);
-		MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
-		VisualizaPantalla();
-	}
+    //--------------------------------------------------------------------------
+	//Bloque para actualización de la hora en pantalla
+	//-------------------------------------------------------------------------
+	#ifdef Display	
+		nSegundosCiclo = rtc.getSecond();
+		if ( nSegundosTime != nSegundosCiclo )
+		{
+			if ( nSegundosCiclo < nSegundosTime )	
+			{
+				nSegundosCicloDif = ( 60 - nSegundosTime) + nSegundosCiclo;
+			}else{
+				nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
+			}
+			nSegundosTime = nSegundosCiclo;
+			LimpiaPantalla();		
+
+			MensajeDispositivo (cDispositivo);
+			MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
+			VisualizaPantalla();
+		}
+	#endif	
 	/*----------------
 	Analisis Lora
  	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
@@ -211,14 +216,10 @@ void loop() {
 				String cSegundos = String(cMensaje).substring(  3 + String(cMensaje).indexOf("-:-"),  String(cMensaje).length() );
 				SetHora (cSegundos.toInt(), cMinutos.toInt(), cHora.toInt());
 				SetFecha (cDia.toInt(), cMes.toInt(), cAno.toInt());
-Serial.println("Suuuuuuuuuuuuuuuuuuuuuuuuuuu");
-oMensaje.Remitente = cDispositivo;
-oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
-Serial.println (oMensaje.Remitente+"-:-"+oMensaje.Mensaje);
+				oMensaje.Remitente = cDispositivo;					//Preparamos mensje para broadcast, remitente el <Maestro> y mensaje <Maestro>All-:-fecha-.-..... 
+				oMensaje.Mensaje = "broadcast-:-fecha-:-"+String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
 				TelegramaToLora(oMensaje);
-
 			}					
-			//Si el mensaje #R-:- se tratará como un mensaje local
 
 	 		/*----------------
  			Actualizacion ultimo valor

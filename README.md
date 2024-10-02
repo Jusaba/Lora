@@ -5,11 +5,52 @@ Para manejar Lora con Serverpic se han editado una serie de funciones recogidas 
 
 ## Funcionamiento
 Se han incluido dos modulos distiontos, **Master** y **Slave** , el prinicipio de funcionamienrto es el siguiente:
-El **Master**, en el arranque se conecta a Serverpic  básicamente lo que hace es transmitir por radio las ordenes que recibe por Serverpic. El **Slave** esta como receptor, recibe por radio las ordenes recibidas del **Master**.
-El **Slave** se ha intentado hacer semejante a cualquier dispositivo Serverpic, recibe un mensaje de Serverpic, crea un Telegrama y lo analiza en el loop del programa  principal para ejecutar la orden pertinente por lo tanto, las rutinas de la radio, entregarán al programa principal un Telegrama exactamente identico a los que se tratan en Serverpic.
-Inicialmente se ha contemplado un solo receptor pero en futuras versiones se adaptara para disponer de varios receptores para distintos usos.
+El **Master**, en el arranque se conecta a Serverpic y básicamente lo que hace es esperar mensajes de Serverpic y diferenciar si son para el **Master** o para el **Slave**.
+Un mensaje para el **Master** tendrá el formato habitual de Serverpic
 
-En el Master, la estructura loop del programa principal queda de la siguiente forma
+	mensaje-:-<Master>-:-<orden>
+
+Un menmsaje pare un **Slave** tendrá el siguiente formato en Serverpic
+
+	mensaje-:-<Master>-:-#R-:-<Salve>-:-<orden>
+
+				o por Broadcast
+
+	mensaje-:--<Master>-:-#R-:-broadcast-:-<orden>  	
+
+El **Master**, si es una orden para el actuará en consecuencia, si es una orden para un **Slave**, elaborará un mensaje similar a los de Serverpic y lo enviará por radio. El mensaje tendra el siguiente formato
+
+	<Remitente>-:-<Salve>-:-<orden>
+
+					o
+
+	<Remitente>-:-broadcast-:-<orden>				
+
+
+El **Slave** se ha intentado hacer semejante a cualquier dispositivo Serverpic pero teniendo en cuanta que los telegramas ahora los recibirá por radio desde el **Masater**. Las rutinas de recepción de la radio estarán en espera de recepción y cuando se reciba un telegrama pondrá a **1** el flag  **oLoraMensaje.lRxMensaje** y cederá el análisis al loop del programa principal.
+En el programa principal, se analiza si el telegrama va dirigido a este **Slave** o si es de broadcast, si es así ejecutará la orden recibida y si no la ignorará
+
+En la otra dirección, el **Slave**, si tiene que responder a la orden recibida, elaborara un mensaje de la siguiente forma, supongamos que el **Master** recibe el mensaje siguiente
+
+	mensaje-:-<Master>-:-#R-:-<Salve>-:-<orden>
+
+El **Master** manda a **Slave** el siguiente mensaje
+
+	<Remitente>-:-<Salve>-:-<orden>
+
+El **Slave** manda por radio el siguiente texto
+
+	<Remitente>-:-<Salve>-:-<respuesta>
+
+El **Master** recibe ese texto y elabora el siguiente mensaje
+
+	mensaje-:-<Remitente>-:-<Salve>-:-<respuesta>
+
+Con esto, el usuario de Serverpic que mandó una orden a un **Salve** recibirá la respuesta desde el **Slave** a esa orden.	
+
+
+
+En el **Master**, la estructura loop del programa principal queda de la siguiente forma
 
 ```C++
 void loop() {
@@ -33,13 +74,33 @@ void loop() {
 		}												                                                         
  	}	
   }
-    	
+  	/*----------------
+	Analisis Lora
+ 	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
+	Confeccionamos el mensaje hacia Serverpic y lo enviamos a Serverpic
+		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Lora
+		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
+	------------------*/
+	if (oLoraMensaje.lRxMensaje)								//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
+	{
+		oLoraMensaje.lRxMensaje = 0;							//Resetasmo el flag de informacion recibida por radio			
+		oMensaje.Mensaje = oLoraMensaje.Mensaje;				//Confeccionamos el mensaje a enviar hacia el servidor	
+		oMensaje.Destinatario = oLoraMensaje.Remitente;
+		EnviaMensaje(oMensaje);									//Y lo enviamos
+	}
+  	/*----------------
+	Analisis Serverpic
+	*/
   oMensaje = Mensaje ();								 					 
   if ( oMensaje.lRxMensaje)										
   {
-    
-    TelegramaToLora(oMensaje);
-
+		if ((oMensaje.Mensaje).indexOf("#R-:-") == 0)				//Si el inicio del mensaje es #R es mensaje para enviar a los remotos
+		{
+			oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Excluimos #R del mensaje
+			TelegramaToLora(oMensaje);
+		}else{
+			//Procesamos el mensaje en Local
+		}	
   }
   wdt_reset(); 													
 }

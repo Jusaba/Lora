@@ -190,7 +190,11 @@
 	String cPush = String(' ');												//Cliente de push y Telegram
 	
 	boolean lFlagInterrupcion = 0;                							//Flag para indicar a loop() que ha habido pulsacion
-	
+
+	//------------------------------------
+	//Declaracion de variables Particulares
+	//------------------------------------
+
 	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
 	int nMinutosOn = 0;
 	int nSegundosOn = 0;													//Variable con los segunods de temporizacion
@@ -199,6 +203,9 @@
 	boolean lTemporizado = 0;												//Flag para indicar si hay un proceso temporizado ( On por ejemlo )
 
 	boolean lInicio = 0;
+	boolean lBroadcast = 0;
+
+	String cDispositivoMaster = String(' ');								//Variable donde se deja el nombre del dsipositivo maestro
 
 		//------------------------------------
 	    //Declaracion de variables Particulares

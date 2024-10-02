@@ -48,6 +48,7 @@ void setup() {
 	char USUARIO[1+aCfg.Usuario.length()]; 
 	(aCfg.Usuario).toCharArray(USUARIO, 1+1+aCfg.Usuario.length());          //Almacenamos en el array USUARIO el nombre de usuario 
 	cDispositivo = USUARIO;													 //Lo asignamos a cDispositivo
+	cDispositivoMaster = String(cDispositivo).substring(  0, String(cDispositivo).indexOf("_"));
 	lHomeKit = aCfg.lHomeKit;												 //Recuperamos el flag HomeKit	
 	lPush = aCfg.lPush;														 //Recuperamos el flag lPush
 	char CLIENTEPUSH[1+aCfg.Push.length()]; 								
@@ -55,8 +56,6 @@ void setup() {
 	cPush = CLIENTEPUSH;													 //Lo asignamos a cPush
 	lEstadisticas = aCfg.lEstadisticas;										 //Recuperamos el flag lEstadisticas
 	lTelegram = aCfg.lTelegram;												 //Recuperamos el flag lTelegram
-
-
 
 	if ( LeeByteEprom ( FlagConfiguracion ) == 0 )										//Comprobamos si el Flag de configuracion esta a 0
 	{																					// y si esta
@@ -168,9 +167,13 @@ void loop() {
 			Serial.println(cDestinatarioLora);
 			Serial.println(cOrdenLora);
 		#endif		
-		if ( cDestinatarioLora == cDispositivo )
+		if ( cDestinatarioLora == cDispositivo || cDestinatarioLora =="broadcast" )
 		{
-			if (cOrdenLora.indexOf("On") == 0)									//Si se recibe "On"
+			if ( cDestinatarioLora =="broadcast" )
+			{ 
+				lBroadcast = 1;										//Ponemos a 1 el flag de broadcast. Si es broadcast no debe haber respuesta del Slave
+			}
+			if (cOrdenLora.indexOf("On") == 0)						//Si se recibe "On"
 			{	
 
 				if (cOrdenLora.indexOf("On-:-") == 0)				//Si hay parametro de duracion de minutos
@@ -223,7 +226,7 @@ void loop() {
 			{	
 				Reset();				
 			}									
-			if (cOrdenLora == "Master")								//Si se recibe "Reset"
+			if (cOrdenLora == "Master")								//Si se recibe "Master"
 			{	
 				nMiliSegundosTest = millis();				
 			}							
@@ -234,7 +237,7 @@ void loop() {
 		/*----------------
  		Contestacion al Master
  		------------------*/
-		if ( cSalida != String(' ') )													//Si hay algo que comunicar
+		if ( cSalida != String(' ') && !lBroadcast )									//Si hay algo que comunicar y la orden no fue a Broadcast
 		{	
 			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se le notifica al Lora Remitente
 			#ifdef Display
@@ -243,6 +246,7 @@ void loop() {
 			#endif 
 		}	
 		cSalida = String(' ');	
+		lBroadcast = 0;
 
 
 	}
@@ -261,7 +265,9 @@ void loop() {
 			if ( millis() > ( nMiliSegundosTest + TiempoTest ) )			//Comprobamos si se ha perdiod la conexion con el Master 
 			{
 
-				Reset();
+				//Reset();
+				nMiliSegundosTest = millis();
+				Serial.print("#");
  	   		}	
     	}
 
@@ -376,7 +382,6 @@ void loop() {
 			nMiliSegundosTest = millis();		
 	
 		}
-
 	    wdt_reset(); 													//Refrescamos WDT
 
 }
