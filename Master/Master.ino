@@ -111,8 +111,7 @@ void loop() {
 				nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
 			}
 			nSegundosTime = nSegundosCiclo;
-			LimpiaPantalla();		
-
+			LimpiaPantalla();				
 			MensajeDispositivo (cDispositivo);
 			MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
 			VisualizaPantalla();
@@ -138,9 +137,6 @@ void loop() {
 			oMensaje.Mensaje = oLoraMensaje.Mensaje;				//Confeccionamos el mensaje a enviar hacia el servidor	
 			oMensaje.Destinatario = oLoraMensaje.Remitente;
 			EnviaMensaje(oMensaje);									//Y lo enviamos
-			#ifdef Display	
-				MensajeTxtRecibidodeLora(oLoraMensaje);
-			#endif
 		}
 
 	 
@@ -197,9 +193,6 @@ void loop() {
 			{
 				oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Extraemos el mensaje excluyendo el #R
 				TelegramaToLora(oMensaje);								//Enviamos el mensaje a Lora remoto
-				#ifdef Display
-					MensajeTxtEnviadoaLora (oMensaje);	
-				#endif	
 			}	 
 			if ((oMensaje.Mensaje).indexOf("fecha-:-") == 0)								//Si se recibe 'Hora'
 			{

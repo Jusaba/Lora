@@ -124,7 +124,7 @@
 	//----------------------------------------------
 	//Display
 	//----------------------------------------------
-	//#define Display
+	#define Display
 
 
     //----------------------------------------------
@@ -152,14 +152,21 @@
 	//----------------------------------------------
 	//Declaracion de funciones Universales
 	//----------------------------------------------
-	boolean GetDispositivo (void);
-	void DispositivoOff (void);
-	void DispositivoOn (void);
+	boolean GetDispositivo (void);																//Devuelve el estado del sipositivo
+	void DispositivoOff (void);																	//Pone el dispositivo en Off
+	void DispositivoOn (void);																	//Pone el dispositivo en On
 
-	void SetHora ( int nSg, int nMinutos, int nHora );
-	void SetFecha ( int nDia, int nMes, int nAno );
-	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );
-	void SegundosToHHMMSS ( int nSegundosTot );
+	//----------------------------------------------
+	//Declaracion de funciones RTC
+	//----------------------------------------------
+	void SetHora ( int nSg, int nMinutos, int nHora );											//Pone la hora, minutos y segundos en RTC
+	void SetFecha ( int nDia, int nMes, int nAno );												//Pone Dia, Mes y año en RTC
+	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );		//Pone hora, minutos, segundos, dia, mes y año en RTC
+
+	//----------------------------------------------
+	//Declaracion de funciones Display
+	//----------------------------------------------	
+	void SegundosToHHMMSS ( int nSegundosTot );													//Visualiza en pantalla una cantidad de segundos en HH:MM:SS					
 
 
 	//----------------------------------------------
@@ -196,40 +203,33 @@
 	//------------------------------------
 
 	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
-	int nMinutosOn = 0;
 	int nSegundosOn = 0;													//Variable con los segunods de temporizacion
 	int nSegundosCiclo = 0;													//Variable donde se almacena los segundos actuales del RTC
 	int nSegundosCicloDif = 0;												//Diferencia de segundos entre el momento actual y la comprobacion anterior
 	boolean lTemporizado = 0;												//Flag para indicar si hay un proceso temporizado ( On por ejemlo )
 
-	boolean lInicio = 0;
-	boolean lBroadcast = 0;
+	boolean lInicio = 0;													//Flag que indica al loop que está en su primer ciclo de loop, estará a 1 cuando se inicia el cliente
+	boolean lBroadcast = 0;													//Flag que se pone a 1 cuando se recibe mensaje de Broadcast				
 
 	String cDispositivoMaster = String(' ');								//Variable donde se deja el nombre del dsipositivo maestro
 
-		//------------------------------------
-	    //Declaracion de variables Particulares
-	    //------------------------------------
 		
-		//------------------------------
-		// Definiciones de pantalla OLED 
-		//------------------------------
-        #define OLED_SDA_PIN    4
-        #define OLED_SCL_PIN    15
-        #define OLED_RESET      16
-
-
-		#define SCREEN_WIDTH    128 
-		#define SCREEN_HEIGHT   64  
-		#define OLED_ADDR       0x3C 
-
-        // Lineas del display
-		#define OLED_LINE1     0
-		#define OLED_LINE2     10
-		#define OLED_LINE3     20
-		#define OLED_LINE4     30
-		#define OLED_LINE5     40
-		#define OLED_LINE6     50
+	//------------------------------
+	// Definiciones de pantalla OLED 
+	//------------------------------
+    #define OLED_SDA_PIN    4
+    #define OLED_SCL_PIN    15
+    #define OLED_RESET      16
+	#define SCREEN_WIDTH    128 
+	#define SCREEN_HEIGHT   64  
+	#define OLED_ADDR       0x3C 
+    // Lineas del display
+	#define OLED_LINE1     0
+	#define OLED_LINE2     10
+	#define OLED_LINE3     20
+	#define OLED_LINE4     30
+	#define OLED_LINE5     40
+	#define OLED_LINE6     50
 
 
 	
@@ -293,42 +293,80 @@
 		lEstado = 0;
 		MensajeOff();
 	}   
-
+	//----------------------------
+	//Funciones RTC
+	//----------------------------	
+	/**
+	******************************************************
+	* @brief Pone Hora, Minutos y Segundos en RTC
+	*
+	* @param nSg.- Segundos
+	* @param nMinutos.- Minutos
+	* @param nHora.- Horas
+	*/
 	void SetHora ( int nSg, int nMinutos, int nHora )
 	{
-		int nDia = rtc.getDay();
-		int nMes = rtc.getMonth();
+		int nDia = rtc.getDay();									  	//Salvamos el dia registrado en RTC
+		int nMes = rtc.getMonth();										//Salvamos el mes registrado en RTC
 		if ( nMes == 0 )
 		{
 			nMes = 1;
 		}
-		int nAno = rtc.getYear();
-		Serial.print ("Dia: ");
-		Serial.println ( nDia );
-		Serial.print ("Mes: ");
-		Serial.println ( nMes );
-		Serial.print ("Año: ");
-		Serial.println ( nAno );
-
-		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+		int nAno = rtc.getYear();										//Salvamos el año registrado en RTC
+		#ifdef Debug
+			Serial.print ("Dia: ");
+			Serial.println ( nDia );
+			Serial.print ("Mes: ");
+			Serial.println ( nMes );
+			Serial.print ("Año: ");
+			Serial.println ( nAno );
+		#endif
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 	    //Grabamos en RTC las horas, minutos y segundos pasados junto a los datos de fecha salvados
 	} 
+	/**
+	******************************************************
+	* @brief Pone Dia, Mes y Año en RTC
+	*
+	* @param nDia.- Dia
+	* @param nMes.- Mes
+	* @param nAno.- Año
+	*/	
 	void SetFecha ( int nDia, int nMes, int nAno )
 	{
-		int nSg = rtc.getSecond();
-		int nMinutos = rtc.getMinute();
-		int nHora = rtc.getHour(true);
-		Serial.print ("Segundos: ");
-		Serial.println ( nSg );
-		Serial.print ("Minutos: ");
-		Serial.println ( nMinutos );
-		Serial.print ("Hora: ");
-		Serial.println ( nHora );
-		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
+		int nSg = rtc.getSecond();										//Salvamos los segundos registrados en RTC
+		int nMinutos = rtc.getMinute();									//Salvamos los minutos	registrados en RTC
+		int nHora = rtc.getHour(true);									//Salvamos la hora registrada en RTC
+		#ifdef Debug
+			Serial.print ("Segundos: ");
+			Serial.println ( nSg );
+			Serial.print ("Minutos: ");
+			Serial.println ( nMinutos );
+			Serial.print ("Hora: ");
+			Serial.println ( nHora );
+		#endif	
+		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 		//Grabamos en RTC el dia, mes y año pasados junto a los datos de hora salvados
 	}
+	/**
+	******************************************************
+	* @brief Pone Hora, Minutos, Segundos, dia, mes y año en RTC
+	*
+	* @param nSg.- Segundos
+	* @param nMinutos.- Minutos
+	* @param nHora.- Horas
+	* @param nDia.- Dia
+	* @param nMes.- Mes
+	* @param nAno.- Año
+	*/
 	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno )
 	{
 		rtc.setTime ( nSg, nMinutos, nHora, nDia, nMes, nAno );
 	}
+	/**
+	******************************************************
+	* @brief Convierte un numero de segundos en formato HH:MM:SS y lo manda a una funcion para visualizarlo en pantalla
+	*
+	* @param nSegundosTot.- Segundos 
+	*/
 	void SegundosToHHMMSS ( int nSegundosTot )
 	{
 		int nSegundosTemp = nSegundosTot;
@@ -336,7 +374,9 @@
 		nSegundosTemp = nSegundosTemp - ( nHoras * 3600 );
 		int nMinutos = nSegundosTemp / 60;
 		int nSegundos = nSegundosTemp - ( nMinutos * 60 );
-		MensajeOnTemporizado ( nSegundos, nMinutos, nHoras );
+		#ifdef Display
+			MensajeOnTemporizado ( nSegundos, nMinutos, nHoras );
+		#endif	
 	}
 	//----------------------------
 	//Funciones Particulares

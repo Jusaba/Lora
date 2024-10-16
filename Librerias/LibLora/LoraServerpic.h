@@ -194,15 +194,23 @@
 		while (LoRa.available()) {									//Leemos caracter a caracter el buffer de recepcion
     		cTexto += (char)LoRa.read();							//Le vamos añadiendo los caracteres a cTexto
   		}
-		#ifdef Debug
-			Serial.println ("onReceive-----------------");
-			Serial.println ("Recibido mensaje por radio ");
-			Serial.println (cTexto);
-			Serial.println ("-----------------------------");
-		#endif
-		oLoraMensaje = StringToTelegrama (cTexto);					//Conveirte el String recibido en formato Telegrama				
+		if ( cTexto.indexOf("-:-") > -1)
+		{
+			#ifdef Debug
+				Serial.println ("onReceive-----------------");
+				Serial.println ("Recibido mensaje por radio ");
+				Serial.println (cTexto);
+				Serial.println ("-----------------------------");
+				oLoraMensaje = StringToTelegrama (cTexto);					//Conveirte el String recibido en formato Telegrama				
+			#endif
+		}else{
+			#ifdef Debug
+				Serial.println ("onReceive-----------------");
+				Serial.println ("Recibido ruido ");
+				Serial.println ("-----------------------------");
+			#endif
+		}
  	}
-
 	/**
 	* @brief Funcion convierte un estring formato serverpic 'Remitente-:-Mensaje' a Telegrama
  	* @param cTexto String a convertir

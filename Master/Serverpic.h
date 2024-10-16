@@ -147,6 +147,10 @@
 	//----------------------------------------------
 	//Declaracion de funciones Universales
 	//----------------------------------------------
+	
+	//----------------------------------------------
+	//Declaracion de funciones RTC
+	//----------------------------------------------
 	void SetHora ( int nSg, int nMinutos, int nHora );
 	void SetFecha ( int nDia, int nMes, int nAno );
 	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );
@@ -181,38 +185,36 @@
 	
 	boolean lFlagInterrupcion = 0;                							//Flag para indicar a loop() que ha habido pulsacion
 
-	int nSegundosTime = 0;	
-	int nSegundosCiclo = 0;
-	int nSegundosCicloDif = 0;
+	//------------------------------------
+	//Declaracion de variables Particulares
+	//------------------------------------
+
+	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
+	int nSegundosCiclo = 0;													//Variable donde se almacena los segundos actuales del RTC
+	int nSegundosCicloDif = 0;												//Diferencia de segundos entre el momento actual y la comprobacion anterior
 
 	boolean lInicio = 0;
 
-
-		 //------------------------------------
-	    //Declaracion de variables Particulares
-	    //------------------------------------
+	#ifdef Display
 		//------------------------------
 		// Definiciones de pantalla OLED 
 		//------------------------------
-        #define OLED_SDA_PIN    4
-        #define OLED_SCL_PIN    15
-        #define OLED_RESET      16
-
-
+    	#define OLED_SDA_PIN    4
+    	#define OLED_SCL_PIN    15
+    	#define OLED_RESET      16
 		#define SCREEN_WIDTH    128 
 		#define SCREEN_HEIGHT   64  
 		#define OLED_ADDR       0x3C 
-
-        // Lineas del display
+    	// Lineas del display
 		#define OLED_LINE1     0
 		#define OLED_LINE2     10
 		#define OLED_LINE3     20
 		#define OLED_LINE4     30
 		#define OLED_LINE5     40
 		#define OLED_LINE6     50
-	
-	 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+	#endif
 
+	
 	//Variables donde se almacenan los datos definidos anteriormente para pasarlos a Serverpic.h
 	//para mandar la información del Hardware y Software utilizados
 	//En la libreria ServerPic.h estan definidos como datos externos y se utilizan en la funcion
@@ -241,6 +243,18 @@
 	//----------------------------
 	//Funciones Universales
 	//----------------------------	
+
+	//----------------------------
+	//Funciones RTC
+	//----------------------------	
+	/**
+	******************************************************
+	* @brief Pone Hora, Minutos y Segundos en RTC
+	*
+	* @param nSg.- Segundos
+	* @param nMinutos.- Minutos
+	* @param nHora.- Horas
+	*/
 	void SetHora ( int nSg, int nMinutos, int nHora )
 	{
 		int nDia = rtc.getDay();
@@ -259,6 +273,14 @@
 
 		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
 	} 
+	/**
+	******************************************************
+	* @brief Pone Dia, Mes y Año en RTC
+	*
+	* @param nDia.- Dia
+	* @param nMes.- Mes
+	* @param nAno.- Año
+	*/		
 	void SetFecha ( int nDia, int nMes, int nAno )
 	{
 		int nSg = rtc.getSecond();
@@ -272,6 +294,17 @@
 		Serial.println ( nHora );
 		SetHoraFecha ( nSg, nMinutos, nHora, nDia, nMes, nAno ); 
 	}
+	/**
+	******************************************************
+	* @brief Pone Hora, Minutos, Segundos, dia, mes y año en RTC
+	*
+	* @param nSg.- Segundos
+	* @param nMinutos.- Minutos
+	* @param nHora.- Horas
+	* @param nDia.- Dia
+	* @param nMes.- Mes
+	* @param nAno.- Año
+	*/	
 	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno )
 	{
 		rtc.setTime ( nSg, nMinutos, nHora, nDia, nMes, nAno );

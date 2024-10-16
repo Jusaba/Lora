@@ -113,14 +113,18 @@ void loop() {
 			nSegundosCicloDif = nSegundosCiclo - nSegundosTime;
 		}
 		nSegundosTime = nSegundosCiclo;											//Actualiamos nSegundosTime con el segundo actual para la siguiente comprobacion
-		LimpiaPantalla();														//Borramos la pantalla
+		#ifdef Display	
+			LimpiaPantalla();													//Borramos la pantalla
+		#endif	
 		if ( !lTemporizado )													//Si no hay proceso temporizado
 		{
-			if ( lEstado )															//Si es estado On
+			if ( lEstado )														//Si es estado On
 			{	
-				MensajeOn();															//Preparamos el mensaje On para la pantalla											
-			}else{																		//Si el Estado es Off
-				MensajeDispositivo (cDispositivo);										//Preparamos el mensaje de Dispositibo + Hora ( estado en espera )
+				MensajeOn();													//Preparamos el mensaje On para la pantalla											
+			}else{																//Si el Estado es Off
+				#ifdef Display	
+					MensajeDispositivo (cDispositivo);										//Preparamos el mensaje de Dispositibo + Hora ( estado en espera )
+				#endif
 				//MensajeOff();
 				MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
 			}
@@ -130,13 +134,18 @@ void loop() {
 			if ( nSegundosOn <  1)													//Si se ha llegado al final de la temporizacion
 			{
 				lTemporizado = 0;													//Ponemos el flag de temporizacion a 0
-				LimpiaPantalla();													//Limpiamos la pantalla
+				#ifdef Display	
+					LimpiaPantalla();												//Limpiamos la pantalla
+				#endif
 				DispositivoOff();													//Ponemos el dispositivo en Off
 				MensajeDispositivo (cDispositivo);									//y dejamos en pantalla el mensaje de en espera
 				MensajeHora (rtc.getSecond(), rtc.getMinute(), rtc.getHour(true));
 			}
 		}	
-		VisualizaPantalla();														//Visualizamos el mensaje elaborado
+		#ifdef Display			
+			VisualizaPantalla();													//Visualizamos el mensaje elaborado
+		#endif
+
 	}	
 
 	/*----------------
@@ -167,27 +176,27 @@ void loop() {
 			Serial.println(cDestinatarioLora);
 			Serial.println(cOrdenLora);
 		#endif		
-		if ( cDestinatarioLora == cDispositivo || cDestinatarioLora =="broadcast" )
+		if ( cDestinatarioLora == cDispositivo || cDestinatarioLora =="broadcast" )			//Si el mensaje va dirigido a este slave o es un broadcast
 		{
-			if ( cDestinatarioLora =="broadcast" )
+			if ( cDestinatarioLora =="broadcast" )											//Si es broadcast ponemos a 1 el flag lBroadcast
 			{ 
-				lBroadcast = 1;										//Ponemos a 1 el flag de broadcast. Si es broadcast no debe haber respuesta del Slave
+				lBroadcast = 1;																//Ponemos a 1 el flag de broadcast. Si es broadcast no debe haber respuesta del Slave
 			}
-			if (cOrdenLora.indexOf("On") == 0)						//Si se recibe "On"
+			if (cOrdenLora.indexOf("On") == 0)												//Si se recibe "On"
 			{	
 
-				if (cOrdenLora.indexOf("On-:-") == 0)				//Si hay parametro de duracion de minutos
+				if (cOrdenLora.indexOf("On-:-") == 0)										//Si hay parametro de duracion de minutos, extraemos los minutos y lo pasamos a segundos
 				{
 					String cMinutos =  String(cOrdenLora).substring(  3 + String(cOrdenLora).indexOf("-:-"),  String(cOrdenLora).length() );
 					nSegundosOn = cMinutos.toInt() * 60;
-					DispositivoOn();
-					lTemporizado = 1;
-				}else{
+					DispositivoOn();														//Encendemos el dispositivo
+					lTemporizado = 1;														//Ponemos el flag lTemporizado a 1 
+				}else{																		//Si no lleva parametro de minutos encendemos
 					DispositivoOn();
 				}					
 				cSalida = "On";
 			}
-			if (cOrdenLora == "Off")								//Si se recibe "Off"
+			if (cOrdenLora == "Off")														//Si se recibe "Off"
 			{	
 				if (lTemporizado )
 				{
@@ -196,7 +205,7 @@ void loop() {
 				DispositivoOff();	
 				cSalida = "Off";
 			}	
-			if (cOrdenLora == "Get")								//Si se recibe "Get"
+			if (cOrdenLora == "Get")														//Si se recibe "Get"
 			{	
 				if ( GetDispositivo() )
 				{
@@ -206,7 +215,7 @@ void loop() {
 				}	
 				
 			}				
-			if (cOrdenLora.indexOf("fecha-:-") == 0)				//Si se recibe "Fecha"
+			if (cOrdenLora.indexOf("fecha-:-") == 0)										//Si se recibe "Fecha"
 			{
 				String cMensaje =  String(cOrdenLora).substring(  3 + String(cOrdenLora).indexOf("-:-"),  String(cOrdenLora).length() );
 				String cDia = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );
@@ -222,28 +231,21 @@ void loop() {
 				SetHora (cSegundos.toInt(), cMinutos.toInt(), cHora.toInt());
 				SetFecha (cDia.toInt(), cMes.toInt(), cAno.toInt());
 			}		
-			if (cOrdenLora == "Reset")								//Si se recibe "Reset"
+			if (cOrdenLora == "Reset")														//Si se recibe "Reset"
 			{	
 				Reset();				
 			}									
-			if (cOrdenLora == "Master")								//Si se recibe "Master"
+			if (cOrdenLora == "Master")														//Si se recibe "Master"
 			{	
-				nMiliSegundosTest = millis();				
+				nMiliSegundosTest = millis();												//Reseteamos el contador de Test para evitar reset
 			}							
 		}
-		#ifdef Display			
-			MensajeTxtRecibidodeLora(oLoraMensaje);
-		#endif	
 		/*----------------
  		Contestacion al Master
  		------------------*/
 		if ( cSalida != String(' ') && !lBroadcast )									//Si hay algo que comunicar y la orden no fue a Broadcast
 		{	
-			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se le notifica al Lora Remitente
-			#ifdef Display
-				//TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
-				MensajeTxtEnviadoaLora (oLoraMensaje);
-			#endif 
+			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se manda por radio para que recoja el master y pueda responder al remitente
 		}	
 		cSalida = String(' ');	
 		lBroadcast = 0;
@@ -290,8 +292,6 @@ void loop() {
 			fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
 
  		------------------*/
-		//Serial.println(oMensaje.lRxMensaje);
-
 		oMensaje = Mensaje ();							 				//Iteractuamos con ServerPic, comprobamos si sigue conectado al servidor y si se ha recibido algun mensaje
 
 		if ( oMensaje.lRxMensaje)										//Si se ha recibido ( oMensaje.lRsMensaje = 1)
@@ -299,7 +299,6 @@ void loop() {
 			oMensaje.lRxMensaje = 0;
 
 			//En este punto empieza el bloque de programa particular del dispositivo segun la utilizacion					
-
 			if (oMensaje.Mensaje == "On")								//Si se recibe "On", se habilita el pir
 			{	
 				DispositivoOn();	
@@ -335,7 +334,7 @@ void loop() {
 				oMensaje.Destinatario = oMensaje.Remitente;
 				EnviaMensaje(oMensaje);									//Y lo enviamos
 			}			
-			if (oMensaje.Mensaje == "Get")								//Si se recibe 'Get', se devuelve el estado del pir al remitente
+			if (oMensaje.Mensaje == "Get")								//Si se recibe 'Get', se devuelve el estado del dispositivo al remitente
 			{	
 				if ( GetDispositivo() )
 				{
@@ -348,7 +347,7 @@ void loop() {
 				EnviaMensaje(oMensaje);	
 				cSalida = String(' ');									//No ha habido cambio de estado, Vaciamos cSalida para que no se envie a WebSocket y a HomeKit 
 			}	
-			if ((oMensaje.Mensaje).indexOf("fecha-:-") == 0)								//Si se recibe 'Hora'
+			if ((oMensaje.Mensaje).indexOf("fecha-:-") == 0)			//Si se recibe 'Hora'
 			{
 				String cMensaje =  String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() );
 				String cDia = cMensaje.substring (0, String(cMensaje).indexOf("-:-") );

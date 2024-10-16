@@ -26,17 +26,13 @@
     Pantalla LineasDisplay;
 
     void MensajeInicio (void);
-    void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora );
-    void TextoEnviadoaLora ( String cTexto );
     void MensajeConectadoaServerpic (void);
-    void MensajeTxtRecibidodeLora ( String cTexto );
-    void BorraPantallaTx (void);
-    void BorraPantallaRx (void);
     void WritePantalla (void);
     void LimpiaPantalla (void);
     void VisualizaPantalla (void);
     void MensajeDispositivo (String cUtilizacion );
     void MensajeOn ();
+    void MensajeOnTemporizado (int nSegundos, int nMinutos, int nHoras );
     void MensajeOff ();
     void MensajeHora (int nSegundos, int nMinutos, int nHoras );
 
@@ -59,32 +55,6 @@
         display.display();
     }
     
-    void MensajeTxtRecibidodeLora (Telegrama oMensajeLora )
-	{
-
-		int lora_rssi = LoRa.packetRssi();
-        
-        LineasDisplay.Linea4 = "Lora->Serverpic";
-        LineasDisplay.Linea5 = oMensajeLora.Remitente+"-:-"+oMensajeLora.Mensaje;
-        LineasDisplay.Linea6 = "RSSI: " + (String) lora_rssi;
-        WritePantalla();
- 	}    
-
-    void MensajeTxtEnviadoaLora ( Telegrama oMensajeLora )
-    {
-        LineasDisplay.Linea1 = "Serverpic->Lora";
-        LineasDisplay.Linea2 = "Remitente: " + oMensajeLora.Remitente;
-        LineasDisplay.Linea3 = "Mensaje: " + oMensajeLora.Mensaje;
-        WritePantalla();
-    }
-
-    void TextoEnviadoaLora ( String cTexto )
-    {
-        LineasDisplay.Linea1 = "Dispositivo->LoraM";
-        LineasDisplay.Linea2 = "Mensaje: " + cTexto;
-        LineasDisplay.Linea3 = " ";
-        WritePantalla();
-    }
     void LimpiaPantalla (void)
     {
         display.clearDisplay();
