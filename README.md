@@ -3,10 +3,10 @@ Se inicia el proyecto con dispositivo Lora junto a ESP32. El código se ha ejecu
 
 Se han utilizado las siguientes librerias externas 
 
-   	https://github.com/sandeepmistry/arduino-LoRa de **Sandeep Mistry**
-	https://github.com/adafruit/Adafruit-GFX-Library de **adafruit**
-	https://github.com/adafruit/Adafruit_SSD1306 de **adafruit**
-	https://github.com/fbiego/ESP32Time	de **fbiego**
+   	https://github.com/sandeepmistry/arduino-LoRa de Sandeep Mistry
+	https://github.com/adafruit/Adafruit-GFX-Library de adafruit
+	https://github.com/adafruit/Adafruit_SSD1306 de adafruit
+	https://github.com/fbiego/ESP32Time	de fbiego
 
 
 Para manejar Lora con Serverpic se han editado una serie de funciones recogidas en **LoraServerpic** depositada en el directorio Librerias/LibLora de este repositorio. 
@@ -14,16 +14,16 @@ Para manejar Lora con Serverpic se han editado una serie de funciones recogidas 
 Estas librerias deben instalarse en el path habitual de librerias que suele ser C:\Users\<Usuario>\Documentos\Arduino\libraries. Se incluyen en este repositorio para tenerlas actualilzadas y disponibles.
 
 ## Funcionamiento
-La tecnología Lora la vamos a emplear alli donde no llega nuestra rede de WIfi, se han incluido dos modulos distintos, el **Master** y el **Slave** , 
+La tecnología Lora la vamos a emplear alli donde no llega nuestra red de WIfi, se han incluido dos modulos distintos, el **Master** y el **Slave** , 
 El **Master** tiene como misión hacer de puente entre Serverpic y los **Slave**. El prinicipio de funcionamienrto es el siguiente:
 
-El **Master** se ubica en un punto donde tenemos Wifi, en el arranque se conecta a Serverpic y básicamente es esperar mensajes de Serverpic y diferenciar si son para el mismo o para algún **Slave**. En caso de que sea para un **Slave**, el **Master** lo que hará será transmitir la orden recibida por Serverpic al **Slave** deseado.
+El **Master** se ubica en un punto donde tenemos Wifi, en el arranque se conecta a Serverpic y básicamente queda a la espera de recibir mensajes de Serverpic y diferenciar si son para el mismo o para algún **Slave**. En caso de que sea para un **Slave**, el **Master** lo que hará será transmitir por radio la orden recibida por Serverpic al **Slave** deseado.
 
 Un mensaje para el **Master** tendrá el formato habitual de Serverpic
 
 	mensaje-:-<Master>-:-<orden>
 
-Un menmsaje pare un **Slave** tendrá el siguiente formato en Serverpic
+Un menmsaje para un **Slave** tendrá el siguiente formato en Serverpic
 
 	mensaje-:-<Master>-:-#R-:-<Slave>-:-<orden>
 

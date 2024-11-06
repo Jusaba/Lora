@@ -57,7 +57,16 @@
     #include <Adafruit_SSD1306.h>
     //Fin librerias LoRa 32
     
+	//Temporizacion
 	#include <ESP32Time.h>
+
+	//MBus
+	#include <SoftwareSerial.h>
+	#include <ModbusMaster.h>
+
+
+	//TUF2000M
+	#include "TUF2000M.h"
 
 	#include "Mensajes.h"
 	
@@ -79,11 +88,12 @@
 
 	
     #define LoRa_32_V2
+	#define TUF2000M
 
 	#ifdef LoRa_32_V2
 		#define Placa "LoRa 32 V2"
 		#define Modelo ","
-		#define Ino "Slave"					
+		#define Ino "Slave_TUF2000M"					
 		//------------
 		//Pulsador-LED 
 		//------------	
@@ -233,8 +243,7 @@
 
 
 	
-	 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
+	
 	//Variables donde se almacenan los datos definidos anteriormente para pasarlos a Serverpic.h
 	//para mandar la información del Hardware y Software utilizados
 	//En la libreria ServerPic.h estan definidos como datos externos y se utilizan en la funcion

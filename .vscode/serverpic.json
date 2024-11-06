@@ -9,7 +9,7 @@
     "fqbn": "Heltec-esp32:esp32:wifi_lora_32_V2",
     "configuration": "DebugLevel=none,UploadSpeed=115200",
     "compilador": "xtensa-esp32-elf-gcc",
-    "com": "COM3",
+    "com": "COM",
     "baudios": "115200",
     "directorios": [
         {
