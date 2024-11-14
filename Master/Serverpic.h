@@ -1,10 +1,10 @@
 /**
 ******************************************************
 * @file ServerPic.h
-* @brief Documentacion de Modulo LoraTest wifi
+* @brief Funciones de Modulo Lora wifi para Master
 * @author Julian Salas Bartolome
 * @version 1.0
-* @date 12/25/2022
+* @date 01/10/2024
 *******************************************************/
 
 #ifndef SERVERPIC_H
@@ -96,10 +96,19 @@
 		//-----------------
  		//#define TempoRebotes 150
 			
-
 	#endif
 
+	#define TUF2000M
 	
+	#ifdef TUF2000M
+		//MBus
+		#include <SoftwareSerial.h>
+		#include <ModbusMaster.h>
+
+		//TUF2000M
+		#include "TUF2000M.h"
+	#endif
+
 	//----------------------------
 	//CARACTERISTICAS DISPOSITIVO
 	//----------------------------
@@ -156,9 +165,10 @@
 	void SetHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno );
 
 	//----------------------------------------------
-	//Declaracion de funciones Particulares
+	//Declaracion de funciones Particulares para Master
 	//----------------------------------------------
-	
+	void MasterToLora (Telegrama oMensajeaLora);
+	void MasterRepiteToLora (void);
 
 	//------------------------------------
 	//Declaracion de variables Universales
@@ -192,8 +202,17 @@
 	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
 	int nSegundosCiclo = 0;													//Variable donde se almacena los segundos actuales del RTC
 	int nSegundosCicloDif = 0;												//Diferencia de segundos entre el momento actual y la comprobacion anterior
+	int nMinutosTime = 0;													//Variable donde se almacenan los minutos reales de RTC en la comprobacion anterior	
+	int nMinutosCiclo = 0;													//Variable donde se almacena los minutos actuales del RTC
 
-	boolean lInicio = 0;
+	int nPosMedida = 0;														//Posición donde se encuentra el texto 'medida-:-' en unmensaje recibido por radio 
+	String cMensajeMedida = String (' ');									//Cadena que continene el valor de medida para mandar a Kibana
+
+	boolean lTxLora = 0;													//Flag que indica que se ha realizado una petición a un Slave
+	int nRepeticiones = 0; 													//Variable donde se almacena el numero de repeticiones de una peticon al esclavo
+	long nMilisegundosRepeticion = 0;										//Variable para el calculo de los milisegundos que deben transcurrir sin respuesta para hacer una repetición de la peticion
+	
+	boolean lInicio = 0;													//Flag que indica que se ha iniciado la comunicación con Serverpic			
 
 	#ifdef Display
 		//------------------------------
@@ -214,6 +233,8 @@
 		#define OLED_LINE6     50
 	#endif
 
+	#define RepeticionesTx		1
+	#define SgparaRepeticion	3
 	
 	//Variables donde se almacenan los datos definidos anteriormente para pasarlos a Serverpic.h
 	//para mandar la información del Hardware y Software utilizados
@@ -243,6 +264,41 @@
 	//----------------------------
 	//Funciones Universales
 	//----------------------------	
+
+	//----------------------------
+	//Funciones Particulares
+	//----------------------------
+	/**
+	******************************************************
+	* @brief Manda un Telegrama de Serverpic por Lora 
+	*
+	* Manda un mensaje, pone el flag lTxLora a 1, registra el instante n que se envia para temporizar una repeticion si procede y carga la variable con el numero de intentos a realizar 
+	* en caso de que no haya respuesta del destinatario
+	*
+	* @param oMensajeaLora.- Telegrama de Serverpic a enviar por Lora
+	*
+	*/
+	void MasterToLora (Telegrama oMensajeaLora)
+	{
+		TelegramaToLora(oMensajeaLora);		
+		lTxLora = 1;										//Ponemos el flag de peticion lanzada a un Escalvo
+		nMilisegundosRepeticion = millis();				    //Capturamos el instante actual para repetir la petición en caso de no tener respuesta
+		nRepeticiones = RepeticionesTx;
+	}
+	/**
+	******************************************************
+	* @brief Repite el envio del ultimo telegram de Serverpic enviado por Lora 
+	*
+	* Cuando el Master envia un mensaje a un Slave, El MAster espera respuesta durante un tiempo SgparaRepeticion sg, si en ese tiempo
+	* no se recibe respuesta el Master vuelve a mandar el mensaje repitiendo este proceso un numero RepeticionesTx de veces
+	*
+	*/
+	void MasterRepiteToLora ()
+	{
+		RepiteTelegramaToLora();
+		nRepeticiones--;									//Decrementamos el numero de repeticiones
+		nMilisegundosRepeticion = millis();					//Capturamos el instante en el que repetimos esta petición
+	}
 
 	//----------------------------
 	//Funciones RTC
@@ -312,15 +368,7 @@
 	
 	//----------------------------
 	//Funciones Particulares
-	//----------------------------	
-
-
-
-	
-
-	
-
-
+	//----------------------------
 
 	
 #endif

@@ -61,60 +61,90 @@ El **Master** recibe ese texto y elabora el siguiente mensaje hacia Serverpic
 
 Con esto, el usuario de Serverpic que mandó una orden a un **Salve** recibirá la respuesta a esa orden desde el **Slave** direccionado.	
 
-El **Slave** tiene la posibilidad de conectarse a Serverpic si está en una zona con Wifi
-
 
 En el **Master**, la estructura loop del programa principal queda de la siguiente forma
 
 ```C++
 void loop() {
 
-  TestBtnReset (PinReset);
+	/*----------------------------
+	* Bloque de codigo auxiliares
+	*             .
+	*             .
+	----------------------------*/
 
-  	if ( TiempoTest > 0 )
-  	{
-		if ( millis() > ( nMiliSegundosTest + TiempoTest ) )	
-		{
-			nMiliSegundosTest = millis();
-			if ( !TestConexion() )
-			{
-
-  	    	   //**********************************************************************
-			   //Aqui pondremos las acciones a ejecutar si se pierde la conexion
-			   //Por ejemplo, se puede poner el dispositivo controlado en off que seria
-			   //el estado deseado cuando perdemos la conexion y no lo podemos 
-			   //telecontrolar
-  	    	   //**********************************************************************
-			}												                                                         
- 		}	
-  	}
-	/*----------------
+/*-------------------------------------------------------------------------
 	Analisis Lora
-	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
-	Confeccionamos el mensaje hacia Serverpic y lo enviamos a Serverpic
+ 	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
+	Comprobamos si se ha recibido sin error con el estado del flag lErrorRxLora. Si se ha recibido sin error, reseteamos 
+	el flag lTxLora para alertar de que se ha recibido la información solicitada. Luego se comprueba si la petición 
+	fue para obtener una medida o de información.
+	Si fue de medida se prepara mensaje para servidor con el valor de la medida para que el servidor la mande a slastic.
+	La estructura es
+
+		medida-:-<Parametro>-:-<Valor> 
+
+	Si se trataba de una solicitud de información se prepara un mensaje de respuesta al peticionario con la sigiente estructura
+
 		oLoraMensaje.Remitente = El usuario de Serverpic que solicito una accion de un remoto de Lora
 		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
-	------------------*/
-	if (oLoraMensaje.lRxMensaje)								//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
-	{
-		oLoraMensaje.lRxMensaje = 0;							//Resetasmo el flag de informacion recibida por radio			
-		oMensaje.Mensaje = oLoraMensaje.Mensaje;				//Confeccionamos el mensaje a enviar hacia el servidor	
-		oMensaje.Destinatario = oLoraMensaje.Remitente;
-		EnviaMensaje(oMensaje);									//Y lo enviamos
-	}
-	/*----------------
-	Analisis Serverpic
-	*/
+	--------------------------------------------------------------------------*/		
+	if (oLoraMensaje.lRxMensaje)													//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
+		{
+			oLoraMensaje.lRxMensaje = 0;											//Resetasmo el flag de informacion recibida por radio			
+			if ( !lErrorRxLora )													//Si se ha recibido sin error.....
+			{
+				lTxLora = 0;														//Reseteamos el flag de peticion hecha a Esclavo
+				nPosMedida = (oLoraMensaje.Mensaje).indexOf("medida-:-");			//Comprobamos si el mensaje recibido es de medida
+				if (nPosMedida > 0)													//Si lo es .... Lo mandamos al servidor como mensaje de valor/medida 
+				{
+					cMensajeMedida = String(oLoraMensaje.Mensaje).substring(  nPosMedida,  String(oLoraMensaje.Mensaje).length() );		
+					MensajeServidor(cMensajeMedida);
+				}else{																//Si no lo es....
+					oMensaje.Mensaje = oLoraMensaje.Mensaje;						//Confeccionamos el mensaje a enviar hacia el servidor		
+					oMensaje.Destinatario = oLoraMensaje.Remitente;
+					EnviaMensaje(oMensaje);											//Y lo enviamos
+				}
+			}else{																	//Si la recepcion ha sido erronea ......
+
+
+			}	
+
+		}
+	/*--------------------------------------
+	Analisis Comandos recibidos de Serverpic
+	----------------------------------------*/
  	oMensaje = Mensaje ();								 					 
  	if ( oMensaje.lRxMensaje)										
  	{
+		/*--------------------------------------------------------------------------------------
+		* Bloque para la gestión de un comando que se dirige a un remoto ( con el texto '#R-:-')
+		---------------------------------------------------------------------------------------*/
 		if ((oMensaje.Mensaje).indexOf("#R-:-") == 0)				//Si el inicio del mensaje es #R es mensaje para enviar a los remotos
 		{
 			oMensaje.Mensaje = String(oMensaje.Mensaje).substring(  3 + String(oMensaje.Mensaje).indexOf("-:-"),  String(oMensaje.Mensaje).length() ); //Excluimos #R del mensaje
-			TelegramaToLora(oMensaje);
-		}else{
-			//Procesamos el mensaje en Local
+			MasterToLora(oMensaje);
+		}
+		/*--------------------------------
+		* Resto de comando  de serverpic
+		*             .
+		*             .
+		---------------------------------*/
+	 	/*----------------
+ 		Actualizacion ultimo valor
+ 		------------------*/
+		if ( cSalida != String(' ') )								//Si hay cambio de estado
+		{	
+			EnviaValor (cSalida);									//Actualizamos ultimo valor
+		}
+
+		cSalida = String(' ');										//Limpiamos cSalida para iniciar un nuevo bucle
+		if ( lEstadisticas )									 	//Si están habilitadas las estadisticas, actualizamos el numero de comandos recibidos
+		{
+			GrabaVariable ("comandos", 1 + LeeVariable("comandos") );
 		}	
+		nMiliSegundosTest = millis();		
+	
  	}
  	wdt_reset(); 													
 }
@@ -122,7 +152,7 @@ void loop() {
 
 Si se recibe mensaje de Serverpic, le pasa a la función **TelegramaToLora** el contenido del mensaje dentro de una estructura **Telegrama**. La función se encarga de convertir el telegrama en un texto y transmitirlo por la radio.
 
-El Slave recibe ese texto oy lo trata segun el siguiente esquema
+El Slave recibe ese texto y lo trata segun el siguiente esquema
 
 ```C++
 void loop() {
@@ -173,7 +203,7 @@ void loop() {
   wdt_reset(); 													
 }
 ```
-La radio esta en recepción permanente, si recibe un texto, la función **onRecieve** de **LoraServerpic.h** se encarga de obtener el mensaje y convertirlo a la variable **oLoraMensaje** con formato **Telegrama** con el flag **lRxMensaje** a 1, el programa principal, da prioridad a esta información sobre la que se pueda recibir en el mismo instantes desde **Serverpic** y analizaliza el Telegrama **oLoraMensaje**  de forma que el bucle de analisis de comandos recibidos por radio es similar al bucle utilizado para Serverpic.
+La radio esta en recepción permanente, si recibe un texto, la función **onRecieve** de **LoraServerpic.h** se encarga de obtener el mensaje y convertirlo a la variable **oLoraMensaje** con formato **Telegrama** con el flag **lRxMensaje** a 1,  analizaliza el Telegrama **oLoraMensaje**  de forma que el bucle de analisis de comandos recibidos por radio es similar al bucle utilizado para Serverpic.
 
 En la otra dirección, si el **Slave** debe contestar, elabora un String con el formato
 
@@ -190,3 +220,34 @@ Con ese String, la función  **StringToLora()** transmite la cadena por radio. L
 			EnviaMensaje(oMensaje);									//Y lo enviamos
 		}
 ```		
+
+En el momento en el que se elabora esta documentación, se han contemplado dos Slaves distintos, Salave_Rele y Slave_TUF2000M
+
+## Salave_Rele
+
+Este módulo se ha diseñado para controlar un relé. Es muy básico y tiene los siguientes comandos/mensajes
+
+```	
+			On.- Pone el relé en On
+			On-:-N.- Pone el relé  On durante N minutos
+			Off.- Pone el relé en Off
+			Get.- Devuelve el estado del relé
+			fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
+			Reset.- Resetea el modulo
+```
+
+## Salave_TUF2000M
+
+Este modulo se ha diseñado para obtener los datos de consumo de agua utilizando  medidor de caudal ultrasonico TUF-2000M
+Se ha diseñado la libreria **TUF2000M.h** para gestionar el medidor de caudal.
+
+Los comandos disponibles para este Slave son:
+
+```
+	fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
+	Configura.- Configura el Tuf-2000M
+	ConsumoAcumulado.- Devuelve el consumo acumulado almacenado en el registro  'positive acumulator' (0009) 
+	Reset.- Resetea el modulo
+
+```
+

@@ -27,6 +27,8 @@
     #include "driver/rtc_io.h"
     #include <WebServer.h>
     
+	
+
     //#include <StringArray.h>
     #include <SPIFFS.h>
     #include <FS.h>
@@ -60,13 +62,7 @@
 	//Temporizacion
 	#include <ESP32Time.h>
 
-	//MBus
-	#include <SoftwareSerial.h>
-	#include <ModbusMaster.h>
 
-
-	//TUF2000M
-	#include "TUF2000M.h"
 
 	#include "Mensajes.h"
 	
@@ -110,7 +106,18 @@
 
 	#endif
 
+	#define TUF2000M
 	
+	#ifdef TUF2000M
+		//MBus
+		#include <SoftwareSerial.h>
+		#include <ModbusMaster.h>
+
+		//TUF2000M
+		#include "TUF2000M.h"
+	#endif
+
+
 	//----------------------------
 	//CARACTERISTICAS DISPOSITIVO
 	//----------------------------
@@ -160,13 +167,6 @@
 
 
 	//----------------------------------------------
-	//Declaracion de funciones Universales
-	//----------------------------------------------
-	boolean GetDispositivo (void);																//Devuelve el estado del sipositivo
-	void DispositivoOff (void);																	//Pone el dispositivo en Off
-	void DispositivoOn (void);																	//Pone el dispositivo en On
-
-	//----------------------------------------------
 	//Declaracion de funciones RTC
 	//----------------------------------------------
 	void SetHora ( int nSg, int nMinutos, int nHora );											//Pone la hora, minutos y segundos en RTC
@@ -177,6 +177,7 @@
 	//Declaracion de funciones Display
 	//----------------------------------------------	
 	void SegundosToHHMMSS ( int nSegundosTot );													//Visualiza en pantalla una cantidad de segundos en HH:MM:SS					
+
 
 
 	//----------------------------------------------
@@ -213,34 +214,39 @@
 	//------------------------------------
 
 	int nSegundosTime = 0;													//Variable donde se almacenan los segundos reales de RTC en la comprobacion anterior 
+	int nMinutosTime = 0;													//Variable donde se almacenan los minutos reales de RTC en la comprobacion anterior 
+	int nMinutosCiclo = 0;													//Variable donde se almacena los minutos actuales del RTC
 	int nSegundosOn = 0;													//Variable con los segunods de temporizacion
 	int nSegundosCiclo = 0;													//Variable donde se almacena los segundos actuales del RTC
 	int nSegundosCicloDif = 0;												//Diferencia de segundos entre el momento actual y la comprobacion anterior
 	boolean lTemporizado = 0;												//Flag para indicar si hay un proceso temporizado ( On por ejemlo )
+
+	float AcumuladoAgua = 0;												//Varaible donde se almacena el acumulado del agua
 
 	boolean lInicio = 0;													//Flag que indica al loop que está en su primer ciclo de loop, estará a 1 cuando se inicia el cliente
 	boolean lBroadcast = 0;													//Flag que se pone a 1 cuando se recibe mensaje de Broadcast				
 
 	String cDispositivoMaster = String(' ');								//Variable donde se deja el nombre del dsipositivo maestro
 
-		
-	//------------------------------
-	// Definiciones de pantalla OLED 
-	//------------------------------
-    #define OLED_SDA_PIN    4
-    #define OLED_SCL_PIN    15
-    #define OLED_RESET      16
-	#define SCREEN_WIDTH    128 
-	#define SCREEN_HEIGHT   64  
-	#define OLED_ADDR       0x3C 
-    // Lineas del display
-	#define OLED_LINE1     0
-	#define OLED_LINE2     10
-	#define OLED_LINE3     20
-	#define OLED_LINE4     30
-	#define OLED_LINE5     40
-	#define OLED_LINE6     50
 
+	#ifdef Display
+		//------------------------------
+		// Definiciones de pantalla OLED 
+		//------------------------------
+    	#define OLED_SDA_PIN    4
+    	#define OLED_SCL_PIN    15
+    	#define OLED_RESET      16
+		#define SCREEN_WIDTH    128 
+		#define SCREEN_HEIGHT   64  
+		#define OLED_ADDR       0x3C 
+    	// Lineas del display
+		#define OLED_LINE1     0
+		#define OLED_LINE2     10
+		#define OLED_LINE3     20
+		#define OLED_LINE4     30
+		#define OLED_LINE5     40
+		#define OLED_LINE6     50
+	#endif
 
 	
 	
@@ -269,39 +275,7 @@
 	String Board = Placa;
 
 
-	//----------------------------
-	//Funciones Universales
-	//----------------------------	
-	/**
-	******************************************************
-	* @brief Devielve el estado del dispositivo
-	*
-	* @return devuelve <b>1</b> si el dispositivo esta conectado o <b>0<\b> en caso de que no este conectado
-	*/
-	boolean GetDispositivo (void)
-	{
-		return (lEstado);
-    }   
-	/**
-	******************************************************
-	* @brief Pone el dispositivo en On
-	*
-	*/
-	void DispositivoOn (void)
-	{
-		lEstado = 1;
-		MensajeOn();
-	}
-	/**
-	******************************************************
-	* @brief Pone el dispositivo en OPff
-	*
-	*/
-	void DispositivoOff (void)
-	{
-		lEstado = 0;
-		MensajeOff();
-	}   
+
 	//----------------------------
 	//Funciones RTC
 	//----------------------------	
@@ -387,17 +361,6 @@
 			MensajeOnTemporizado ( nSegundos, nMinutos, nHoras );
 		#endif	
 	}
-	//----------------------------
-	//Funciones Particulares
-	//----------------------------
-
-
-
-	
-
-	
-
-
 
 	
 #endif

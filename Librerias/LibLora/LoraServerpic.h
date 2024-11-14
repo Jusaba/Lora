@@ -28,10 +28,17 @@
 		//#include <GLobal.h>
         #include <Servidor.h>
 
+		//String
+		#include <stdint.h>
+		#include <iostream>
+		#include <string>		
         
-		Telegrama oLoraMensaje;			//Telegrama correspondiente a la informacion recibida por radio
-		bool lRxLora = 0;				//Flag para indicar que se ha recibido informacion por radio
+		Telegrama oLoraMensaje;			 	//Telegrama correspondiente a la informacion recibida por radio
+		Telegrama oLoraMensajeRepeticion;
+		boolean lErrorRxLora = 0;			//Flag para indicar que se ha recibido información erronea
    
+		#define DebugLora
+
         //------------------------------------
 	    //Declaracion de variables Particulares
 	    //------------------------------------
@@ -90,10 +97,15 @@
 		void StringToLora ( String cMensaje );
 		//void StringToLora ( std::string cMensaje );
 		void TelegramaToLora (Telegrama oTelegrama);
+		void RepiteTelegramaToLora (void);
 		String LoraToString ( int nBytes );
 		Telegrama StringToTelegrama (String cTexto);
 		void onReceive(int packetSize);
 		void onTxDone(void);
+
+		uint16_t calcularCRC(const char *cadena);
+		String  uint16ToAsciiHex(uint16_t nNumero);
+		uint16_t AsciiHexTouint16 (String cAsciiHex );
 	
 	/* FUncion que inicializa el display OLED 
 	*/ 
@@ -101,11 +113,11 @@
 	{ 
 	   if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) 
 	   { 
-			#ifdef Debug
+			#ifdef DebugLora
 		   		Serial.println("Fallo inicializando comunicacion con  OLED");  
 			#endif	
 	   } else {
-			#ifdef Debug
+			#ifdef DebugLora
 		   		Serial.println("Iniciada la comunicacion con OLED"); 
 		    #endif
 		   /* Limpia el display y configura la fuente */ 
@@ -122,7 +134,7 @@
 	bool LoraInit (void)
 	{
 		bool Salida = false;
-		#ifdef Debug
+		#ifdef DebugLora
 			Serial.println("Inicializando Lora...");
 		#endif
 		SPI.begin(SCK_LORA, MISO_LORA, MOSI_LORA, SS_PIN_LORA);
@@ -130,7 +142,7 @@
 			
 		if (!LoRa.begin(BAND)) 
 		{
-			#ifdef Debug
+			#ifdef DebugLora
 		    	Serial.println("Fallo en inicio de Lora. reintento en 1 segundo...");        
 			#endif
 		    delay(1000);
@@ -138,7 +150,7 @@
 		}else{
 		    /* Configura LoRa para 20dBm, maxima potencia/sensibilidad posible */ 
 		    LoRa.setTxPower(HIGH_GAIN_LORA); 
-			#ifdef Debug
+			#ifdef DebugLora
 			    Serial.println("Lora iniciado correctamente");
 			#endif
 		    Salida = true;
@@ -150,18 +162,24 @@
 
 
 	/**
-	* @brief Funcion que  manda un texto por Lora
+	* @brief Funcion que  manda un texto por Lora, le añade el CRC separado por una coma
  	* @param cMensaje String a mandar por radio
  	*          
 	*/
 	void StringToLora ( String cMensaje )
 	{
     	int nLongitud = cMensaje.length();							//Longitud del mensaje
+		const char *p_Mensaje = cMensaje.c_str();
+		uint16_t crc = calcularCRC(p_Mensaje);
+
+
 		LoRa.idle();												//Pone la radio en espera
 		LoRa.beginPacket();											//Iniciamos la tranmisión
 		LoRa.print(cMensaje);
+		LoRa.print(",");											//Separador de CRC
+		LoRa.print(uint16ToAsciiHex(crc));							//Inclusión de CRC
     	LoRa.endPacket(true);										//Cerramos la transmision
-		#ifdef Debug
+		#ifdef DebugLora
 			Serial.println ("StringToLora-----------------");
 			Serial.print ("Enviado mensaje de ");
 			Serial.print (nLongitud);
@@ -175,12 +193,26 @@
 	******************************************************
 	* @brief Manda un Telegrama de Serverpic por Lora como un String
 	*
-	* @param oTelegrama.- Telegrama de Serverpci a enviar por Lora
+	* @param oTelegrama.- Telegrama de Serverpic a enviar por Lora
 	*
 	*/
 	void TelegramaToLora (Telegrama oTelegrama)
 	{
 		String cTexto = oTelegrama.Remitente+"-:-"+oTelegrama.Mensaje;			//Pasamos la estructura mensaje a un string formato 'remitente-:-orden'
+		oLoraMensajeRepeticion = oTelegrama;
+		StringToLora(cTexto);	
+	}
+
+	/**
+	******************************************************
+	* @brief Repite el ultimo telegrama enviado por Lora
+	*
+	* @param oTelegrama.- Telegrama de Serverpic a enviar por Lora
+	*
+	*/
+	void RepiteTelegramaToLora (void)
+	{
+		String cTexto = oLoraMensajeRepeticion.Remitente+"-:-"+oLoraMensajeRepeticion.Mensaje;			//Pasamos la estructura mensaje a un string formato 'remitente-:-orden'
 		StringToLora(cTexto);	
 	}
 
@@ -190,35 +222,56 @@
  	* 
 	*/
 	void onReceive(int packetSize) {
-  		String cTexto = "";											//Definimos cTexto
-		while (LoRa.available()) {									//Leemos caracter a caracter el buffer de recepcion
-    		cTexto += (char)LoRa.read();							//Le vamos añadiendo los caracteres a cTexto
+  		String cTexto = "";																							//Definimos cTexto
+		lErrorRxLora = 0;
+ 		while (LoRa.available()) {																					//Leemos caracter a caracter el buffer de recepcion
+    		cTexto += (char)LoRa.read();																			//Le vamos añadiendo los caracteres a cTexto
   		}
-		if ( cTexto.indexOf("-:-") > -1)
+		if ( cTexto.indexOf("-:-") > -1)																			//Si el mensaje contiene la cadena '-:-' es que es un mensaje del sistema
 		{
-			#ifdef Debug
+			#ifdef DebugLora
 				Serial.println ("onReceive-----------------");
 				Serial.println ("Recibido mensaje por radio ");
 				Serial.println (cTexto);
-				Serial.println ("-----------------------------");
-				oLoraMensaje = StringToTelegrama (cTexto);					//Conveirte el String recibido en formato Telegrama				
+				Serial.println ("-----------------------------");			
 			#endif
-		}else{
-			#ifdef Debug
-				Serial.println ("onReceive-----------------");
-				Serial.println ("Recibido ruido ");
-				Serial.println ("-----------------------------");
-			#endif
+			String cMensaje = String(cTexto).substring(0, String(cTexto).indexOf(","));								//Separamos mensaje y CRC para comprobar si el mensaje es correcto
+			String cCRC = String(cTexto).substring ( 1 + String(cTexto).indexOf(","), String(cTexto).length() );	
+			const char *p_Mensaje = cMensaje.c_str();
+			if ( calcularCRC(p_Mensaje) ==  AsciiHexTouint16 (cCRC ))												//Si el mensaje es correcto lo trasnformamos en estructura Telegrama
+			{
+				oLoraMensaje=StringToTelegrama(cMensaje);
+			}else{																									//Si no es correcto	
+				lErrorRxLora = 1;																					//Ponemos el flag de error en mensaje a 1
+			}
+		}else{																										//Si no es mensaje de Sistema....
+			if ( cTexto.indexOf("Ko") > -1)																			
+			{
+
+			}else{
+				if ( cTexto.indexOf("Ok") > -1)
+				{
+				
+				}else{
+					#ifdef DebugLora
+						Serial.println ("onReceive-----------------");
+						Serial.println ("Recibido ruido ");
+						Serial.println ("-----------------------------");
+					#endif
+				}
+			}	
 		}
  	}
+
 	/**
-	* @brief Funcion convierte un estring formato serverpic 'Remitente-:-Mensaje' a Telegrama
+	* @brief Funcion convierte un String formato serverpic 'Remitente-:-Mensaje' a Telegrama
  	* @param cTexto String a convertir
  	* 
 	* @return Devuelve el telegrama resultante         
 	*/
 	Telegrama StringToTelegrama (String cTexto)
 	{
+
 		Telegrama oTelegrama;
 		oTelegrama.Remitente = String(cTexto).substring( 0, String(cTexto).indexOf("-:-") );
 	    if ( (oTelegrama.Remitente).indexOf("OK") == 0 )                                      //Cuando se recibe OK desde el servidor por una accion bien realizada, solo se recibe OK, no se recibe remitente
@@ -230,7 +283,8 @@
         oTelegrama.Mensaje = String(cTexto).substring(  3 + String(cTexto).indexOf("-:-"),  String(cTexto).length() );
       	oTelegrama.lRxMensaje = 1;
 	  }	
-	  #ifdef Debug
+	  #ifdef DebugLora
+	  
 			Serial.println ("StringToTelegrama-----------------");
 			Serial.println ("Creado telegrama de ");
 			Serial.println ( cTexto );
@@ -251,6 +305,56 @@
 	void onTxDone() {
   		LoRa.receive(); 		//Pone la radio en recepcion
 	}
+	/**
+	* @brief Funcion que  calcula CRC de una cadena
+ 	* 
+	*/
+	uint16_t calcularCRC(const char *cadena) {
+
+	    uint16_t crc = 0xFFFF; // Valor inicial
+	    while (*cadena) {
+	        crc ^= *cadena++;
+	        for (int i = 0; i < 8; i++) {
+	            if (crc & 0x0001)
+	                crc = (crc >> 1) ^ 0xA001;
+	            else
+	                crc >>= 1;
+	        }
+	    }
+	    return crc;
+	}
+	
+	/**
+	* @brief Funcion que  convierte un uint16_t a String HEX
+ 	* 
+	*/
+	String uint16ToAsciiHex ( uint16_t nNumero ) 
+	{
+	    const char hexDigits[] = "0123456789ABCDEF";
+		String cTxtHex = String(' ');
+	
+	    for (int i = 0; i < 4; ++i) {
+	        cTxtHex =  hexDigits[nNumero & 0x0F] + cTxtHex;
+	        nNumero >>= 4;
+	    }
+	
+	    cTxtHex = cTxtHex + '\0'; // Agregar el carácter nulo al final
+
+		return (cTxtHex);
+	}
+
+	/**
+	* @brief Funcion que  convierte un  String HEX a uint16_t
+ 	* 
+	*/
+	uint16_t AsciiHexTouint16 (String cAsciiHex )
+	{
+	 uint16_t result = (uint16_t) strtol(cAsciiHex.c_str(), NULL, 16);
+    	return result;
+	}
+
+
+
 #endif
 
 	/**

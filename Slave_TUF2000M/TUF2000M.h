@@ -40,36 +40,48 @@
 #define MenuOuterDiameterPipe             0x0011                    //Menu 11
 #define MenuThicknessPipe                 0x0012                    //Menu 12
 #define MenuMaterialPipe                  0x0014                    //Menu 14
+#define MenuFluidType                     0x0020                    //Menu 20
+#define MenuTransducerType                0x0023                    //Menu 23
+#define MenuTransducerMounting            0x0024                    //Menu 24
+#define MenuTransducerSpacing             0x0025                    //Menu 25
+#define MenuSave                          0x0026                    //Menu 26
 #define Menu_Idioma		                    0x0039                    //Menu Idioma
 #define Menu_DateTime                     0x0060                    //Menu Fecha/Hora
-#define Menu_Unidades                     0x0031
+#define Menu_Unidades                     0x0031                    //Menu Unidades
 
-#define Metros3             0
-#define Litros              1
-#define Ingles		          3	   		            //Ingles
-#define Cobre               4
+#define Metros3                             0x30                    //Mas Opciones descritas en M31
+#define Litros                              0x31                    //Mas Opciones descritas en M31
+#define Ingles		                          0x33	   		             //Mas Opciones descritas en M39
+#define Cobre                               0x34                    //Mas Opciones descritas en M14    
+#define Agua                                0x30                    //Mas Opciones descritas en M20
+#define ClampOnTS2                            19                    //Mas Opciones descritas en M23  
+#define VMethod                             0x30                    //Mas Opciones descritas en M24  
 
-#define Hora                0
-#define Dia                 1
-#define Segundo             2
-#define Minuto              3
+#define Hora                                0x30
+#define Dia                                 0x31
+#define Segundo                             0x32
+#define Minuto                              0x33
 
 
 
 
-#define Key_Enter 		0x003D                    //Enter
-
+#define Key_Enter 		                    0x003D                    //Enter
+#define Key_Incrementar                   0x003F                    //Incrementar
+#define Key_Decrementar                   0x003E                    //Decrementar
 
 //Configuracion
 int Idioma = Ingles;
 int Unidades = Litros;
 int UnidaddeTiempo = Hora;
+int Fluido = Agua;
 
 //Datos tuberia
-int OuterDiameter = 355;
+int OuterDiameter = 380;
 int thickness = 3175;
 int InnerDiameter = 0;
-int Material = Cobre;                         
+int Material = Cobre;    
+int TransducerType =  ClampOnTS2;    
+int TransducerMounting = VMethod;               
 
 
 #define DebugTuf
@@ -87,7 +99,11 @@ void ConfiguraPipe (void);
 void ConfiguraOuterDiameterPipe (void);
 void ConfiguraThicknessPipe (void);
 void ConfiguraMaterialPipe (void);
-
+void ConfiguraFluidType (void);
+void ConfiguraTransducerType (void);
+void ConfiguraTransducerMounting (void);
+void ConfiguracionSave(void);
+void Configura(void);
 
 int IntToBcd (int nDato );
 void WriteNumber ( int nNumero );
@@ -100,6 +116,56 @@ float FlowForTodayDecimal (void);
 float FlowForMonthDecimal (void);
 float FlowForYearDecimal (void);
 
+
+void WriteNumber ( int nNumero, int nDecimales )
+{
+    int nDigito;
+    int nNumeroTmp = nNumero;
+    int nDecimal = 0;
+
+    #ifdef DebugTuf
+      Serial.println ("WriteNumber -> Inicio ");
+    #endif  
+    nDigito = int(nNumeroTmp/1000);
+    EnterKey(nDigito);
+    delay(20);
+
+    if ( nDecimales == 3 )
+    {
+        EnterKey(0x3A);
+        delay(20);
+    }
+
+    nNumeroTmp = nNumeroTmp - ( nDigito * 1000);
+    nDigito = int(nNumeroTmp/100);
+    EnterKey(nDigito);
+    delay(20);
+
+    if ( nDecimales == 2 )
+    {
+        EnterKey(0x3A);
+        delay(20);
+    }
+ 
+    nNumeroTmp = nNumeroTmp - ( nDigito * 100);
+    nDigito = int(nNumeroTmp/10);
+    EnterKey(nDigito);
+    delay(20);
+
+    if ( nDecimales == 1 )
+    {
+        EnterKey(0x3A);
+        delay(20);
+    }
+ 
+    nNumeroTmp = nNumeroTmp - ( nDigito * 10);
+    EnterKey(nNumeroTmp);
+    delay(20);
+    #ifdef DebugTuf
+      Serial.println ("WriteNumber -> Final ");
+    #endif  
+
+}
 /**
   * @brief Lee el dato long de un par de registros
   * 
@@ -184,6 +250,21 @@ void WindowMenu (int nMenu)
    uint8_t result;
    result = TUF.writeSingleRegister (Registro_Menu-1, nMenu);            //Ventana de menu nMenu
 } 
+
+
+/************************************************
+* Configuraciones
+*   ConfiguraIdioma()     -> Ingles
+*   ConfiguraHoraFecha (  int nSg, int nMinutos, int nHora, int nDia, int nMes, int nAno )
+*   Configura Unidades    -> litros
+*   ConfiguraOuterDiameterPipe ()  -> OuterDiameter/10
+*   ConfiguraThicknessPipe () -> thickness/1000
+*   ConfiguraMaterialPipe () -> Cobre
+*   ConfiguraFluidType () -> Agua
+*   ConfiguraTransducerType () -> TS2
+*   ConfiguraTransducerMounting () -> V 
+*   ConfigurcionSave() 
+*/
 /**
 * @brief Configura el idioma a Ingles
 */
@@ -192,17 +273,17 @@ void ConfiguraIdioma (void)
 	uint8_t result;
   
   WindowMenu(Menu_Idioma);                                                   //Pantalla idioma
-  delay(10);  
+  delay(20);  
   if (result == TUF.ku8MBSuccess)
   {
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);    
+      delay(20);    
       EnterKey(Idioma);                                                     //Ingles
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);
-      delay(10);
+      delay(20);
       WindowMenu (Menu_0);
-      delay(10);
+      delay(20);
    	  #ifdef DebugTuf
         Serial.println("ConfiguraIdioma -> Cambiado idioma");
       #endif  
@@ -254,21 +335,21 @@ void ConfiguraUnidades (void)
 {
   uint8_t result;
   WindowMenu(Menu_Unidades);                                                   //Pantalla idioma
-  delay(10);  
+  delay(20);  
   if (result == TUF.ku8MBSuccess)
   {
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);    
+      delay(20);    
       EnterKey(Unidades);
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);    
+      delay(20);    
       EnterKey(UnidaddeTiempo);
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);    
+      delay(20);    
      	#ifdef DebugTuf
-        Serial.println("ConfiguraUnidades -> Cambiado Unidades");
+        Serial.println("ConfiguraUnidades -> Se han registrado las Unidades");
       #endif  
 	}else{
       #ifdef DebugTuf
@@ -276,116 +357,252 @@ void ConfiguraUnidades (void)
       #endif  
 	}	
 }  
-void WriteNumber ( int nNumero, int nDecimales )
-{
-    int nDigito;
-    int nNumeroTmp = nNumero;
-    int nDecimal = 0;
-
-    nDigito = int(nNumeroTmp/1000);
-    EnterKey(nDigito);
-    delay(10);
-
-    if ( nDecimales == 3 )
-    {
-        EnterKey(0x3A);
-        delay(10);
-    }
-
-    nNumeroTmp = nNumeroTmp - ( nDigito * 1000);
-    nDigito = int(nNumeroTmp/100);
-    EnterKey(nDigito);
-    delay(10);
-
-    if ( nDecimales == 2 )
-    {
-        EnterKey(0x3A);
-        delay(10);
-    }
- 
-    nNumeroTmp = nNumeroTmp - ( nDigito * 100);
-    nDigito = int(nNumeroTmp/10);
-    EnterKey(nDigito);
-    delay(10);
-
-    if ( nDecimales == 1 )
-    {
-        EnterKey(0x3A);
-        delay(10);
-    }
- 
-    nNumeroTmp = nNumeroTmp - ( nDigito * 10);
-    EnterKey(nNumeroTmp);
-    delay(10);
-
-}
-
-void ConfiguraPipe (void)
-{
-  ConfiguraOuterDiameterPipe ();
-  ConfiguraThicknessPipe ();
-  ConfiguraMaterialPipe ();
-}
-
+/**
+******************************************************
+* @brief Configura el diametro exterior de la tuberia
+* El diametro se encuentra en la variable global OuterDiameter
+*/
 void ConfiguraOuterDiameterPipe (void)
 {
     uint8_t result;
     WindowMenu(MenuOuterDiameterPipe);                                                   //Pantalla Outer Diameter Pipe
-    delay(10);  
+    delay(20);  
     if (result == TUF.ku8MBSuccess)
     {
       EnterKey(Key_Enter);                                                              //<Ent>
-      delay(10);
+      delay(20);
 
       WriteNumber(OuterDiameter, 1);
 
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);
-
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraOuterDiameterPipe -> Registrado diametro exterior");
+      #endif  
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraOuterDiameterPipe -> No se ha podido Registrar el diametro exterior");
+      #endif  
     } 
 }
+/**
+******************************************************
+* @brief Configura el grosor de la pared de la tuberia
+* El dato se encuentra en la variable global thickness
+*/
 void ConfiguraThicknessPipe (void)
 {
     uint8_t result;
     WindowMenu(MenuThicknessPipe);                                                   //Pantalla Thickness Pipe
-    delay(10);  
+    delay(20);  
     if (result == TUF.ku8MBSuccess)
     {
       EnterKey(Key_Enter);                                                              //<Ent>
-      delay(10);
+      delay(20);
 
       WriteNumber(thickness, 3);
 
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);
+      delay(20);
       EnterKey(Key_Enter);                                                  //<Ent>
-      delay(10);
-
-    } 
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraThicknessPipe -> Se ha Registrado el grosor de las paredes");
+      #endif      
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraThicknessPipe -> No se ha podido Registrar el grosor de las paredes");
+      #endif
+    }    
 }
+/**
+******************************************************
+* @brief Configura el material de la tuberia
+* El material se encuentra en la variable global Material
+*/
 void ConfiguraMaterialPipe (void)
 {
     uint8_t result;
     WindowMenu(MenuMaterialPipe);                                                      //Pantalla Material Pipe
-    delay(10);  
+    delay(20);  
     if (result == TUF.ku8MBSuccess)
     {
       EnterKey(Key_Enter);                                                              //<Ent>
-      delay(10);
+      delay(20);
 
       EnterKey(Material);                                                               //Cobre
-      delay(10);
+      delay(20);
 
       EnterKey(Key_Enter);                                                              //<Ent>
-      delay(10);
-
-
-    }  
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraMaterialPipe ->Se  Registrado el material de la tuberia");
+      #endif
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraMaterialPipe -> No se ha podido Registrar el material de la tuberia");
+      #endif
+    }      
 }
+/**
+******************************************************
+* @brief Configura el fluido que circula por la tuberia
+* El tipo de fluido se encuentra en la variable global Fluido
+*/
+void ConfiguraFluidType (void)
+{
+    uint8_t result;
+    WindowMenu(MenuFluidType);                                                          //Pantalla Fluid Type
+    delay(20);  
+    if (result == TUF.ku8MBSuccess)
+    {
+      EnterKey(Key_Enter);                                                              //<Ent>
+      delay(20);
+
+      EnterKey(Fluido);                                                               //Cobre
+      delay(20);
+
+      EnterKey(Key_Enter);                                                              //<Ent>
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraFluidType ->Se ha Registrado el fluido");
+      #endif
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraFluidType -> No se ha podido Registrar el fluido");
+      #endif
+    }        
+}
+/**
+******************************************************
+* @brief Configura el tipo de transductor que utiliza
+* El modelo de transductor se encuentra en la variable global TransducerType
+*/
+void ConfiguraTransducerType (void)
+{
+    uint8_t result;
+    int nOpcion;
+    WindowMenu(MenuTransducerType);                                                          //Pantalla Fluid Type
+    delay(20);  
+    if (result == TUF.ku8MBSuccess)
+    {
+      EnterKey(Key_Enter);                                                              //<Ent>
+      delay(20);
+
+      if ( TransducerType < 10 )                                                          //Si el tipo de transductro es menor de 10
+      {
+        EnterKey(TransducerType);                                                         //Introducimos el tipo directamente
+        delay(20);
+      }else{                                                                              //Si es superior a 10
+        EnterKey(10);                                                                     //Seleccionamos la opcion 10
+        delay(20);
+        nOpcion = TransducerType;                                                         //Simulamos la tecla incrementar hasta llegar a la opcion deseada
+        while (nOpcion > 10)
+        {
+          EnterKey(Key_Incrementar);                                                      //<Incrementar>
+          delay(100);
+          nOpcion--;
+        }  
+      } 
+      EnterKey(Key_Enter);                                                                //<Ent>
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraTransducerType -> Se ha Registrado el tipo de transductor");
+      #endif      
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraTransducerType -> No se ha podido Registrar el tipo de transductor");
+      #endif
+    }       
+}    
+/**
+******************************************************
+* @brief Configura el metodo de montaje de los transductores
+* El tipo de metodp se encuentra en la variable global TransducerMounting
+*/
+void ConfiguraTransducerMounting (void)
+{
+    uint8_t result;
+    WindowMenu(MenuTransducerMounting);                                             //Pantalla Transducer Mounting
+    delay(20);  
+    if (result == TUF.ku8MBSuccess)
+    {
+      EnterKey(Key_Enter);                                                          //<Ent>
+      delay(20);
+
+      EnterKey(TransducerMounting);                                                 //VMethod
+      delay(20);
+
+      EnterKey(Key_Enter);                                                          //<Ent>
+      delay(20);
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraTransducerMounting -> Se ha Registrado el tipo de montaje transductor");
+      #endif      
+    }else{
+     	#ifdef DebugTuf
+        Serial.println("ConfiguraTransducerMounting -> No se ha podido Registrar el tipo de montaje transductor");
+      #endif
+    }        
+}
+/**
+******************************************************
+* @brief Salva la configuración en Flash
+*/
+void ConfiguracionSave (void)
+{
+	uint8_t result;
+  
+  WindowMenu(MenuSave);                                                   //Pantalla Save parameter to flash
+  delay(20); 
+  if (result == TUF.ku8MBSuccess)
+  {
+      EnterKey(Key_Enter);                                                  //<Ent>
+      delay(20);    
+
+      EnterKey(0x31);                                                       //Opción salvar en Flash
+      delay(20);    
+
+      EnterKey(Key_Enter);                                                  //<Ent>
+      delay(20);    
+
+  }      
+}
+/**
+******************************************************
+* @brief Configura los parametros de la tuberia
+* Diametro exterior de la tuberia, grosor de las paredes de la tuberia, Material, Fluido, tipo de transductor, montaje de los trasductores
+* Deja en pantalla la distancia que debe haber entre los transductores
+*/
+void ConfiguraPipe (void)
+{
+  
+  ConfiguraOuterDiameterPipe ();
+  ConfiguraThicknessPipe ();
+  ConfiguraMaterialPipe ();
+  ConfiguraFluidType();
+  ConfiguraTransducerType();
+  ConfiguraTransducerMounting();
+  ConfiguracionSave();
+  WindowMenu(MenuTransducerSpacing);                                             //Pantalla Transducer distance mounting
+}
+/**
+******************************************************
+* @brief Configura todos los parametros de la instalación
+*/
+void Configura(void)
+{
+  Serial.println("###########################################################################");
+  ConfiguraPipe();
+}
+
+/************************************************
+* Lectura de Registros/Datos
+
+*/
 
 /**
 * @brief Lee el registro 'flow RATE' (0001) 
