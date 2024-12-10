@@ -73,7 +73,7 @@ void loop() {
 	*             .
 	----------------------------*/
 
-/*-------------------------------------------------------------------------
+	/*-------------------------------------------------------------------------
 	Analisis Lora
  	Si se recibe un mensaje por Radio ( oLoraMensaje.lRxMensaje = 1 ), reseteamos el flag oLoraMensaje.lRxMensaje
 	Comprobamos si se ha recibido sin error con el estado del flag lErrorRxLora. Si se ha recibido sin error, reseteamos 
@@ -90,27 +90,24 @@ void loop() {
 		oLoraMensaje.Mensaje = <Nombre remoto Lora>-:-<Acción realizada>
 	--------------------------------------------------------------------------*/		
 	if (oLoraMensaje.lRxMensaje)													//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
+	{
+		oLoraMensaje.lRxMensaje = 0;											//Resetasmo el flag de informacion recibida por radio			
+		if ( !lErrorRxLora )													//Si se ha recibido sin error.....
 		{
-			oLoraMensaje.lRxMensaje = 0;											//Resetasmo el flag de informacion recibida por radio			
-			if ( !lErrorRxLora )													//Si se ha recibido sin error.....
+			lTxLora = 0;														//Reseteamos el flag de peticion hecha a Esclavo
+			nPosMedida = (oLoraMensaje.Mensaje).indexOf("medida-:-");			//Comprobamos si el mensaje recibido es de medida
+			if (nPosMedida > 0)													//Si lo es .... Lo mandamos al servidor como mensaje de valor/medida 
 			{
-				lTxLora = 0;														//Reseteamos el flag de peticion hecha a Esclavo
-				nPosMedida = (oLoraMensaje.Mensaje).indexOf("medida-:-");			//Comprobamos si el mensaje recibido es de medida
-				if (nPosMedida > 0)													//Si lo es .... Lo mandamos al servidor como mensaje de valor/medida 
-				{
-					cMensajeMedida = String(oLoraMensaje.Mensaje).substring(  nPosMedida,  String(oLoraMensaje.Mensaje).length() );		
-					MensajeServidor(cMensajeMedida);
-				}else{																//Si no lo es....
-					oMensaje.Mensaje = oLoraMensaje.Mensaje;						//Confeccionamos el mensaje a enviar hacia el servidor		
-					oMensaje.Destinatario = oLoraMensaje.Remitente;
-					EnviaMensaje(oMensaje);											//Y lo enviamos
-				}
-			}else{																	//Si la recepcion ha sido erronea ......
-
-
-			}	
-
-		}
+				cMensajeMedida = String(oLoraMensaje.Mensaje).substring(  nPosMedida,  String(oLoraMensaje.Mensaje).length() );		
+				MensajeServidor(cMensajeMedida);
+			}else{																//Si no lo es....
+				oMensaje.Mensaje = oLoraMensaje.Mensaje;						//Confeccionamos el mensaje a enviar hacia el servidor		
+				oMensaje.Destinatario = oLoraMensaje.Remitente;
+				EnviaMensaje(oMensaje);											//Y lo enviamos
+			}
+		}else{																	//Si la recepcion ha sido erronea ......
+		}	
+	}
 	/*--------------------------------------
 	Analisis Comandos recibidos de Serverpic
 	----------------------------------------*/
@@ -161,45 +158,45 @@ void loop() {
   
   if (oLoraMensaje.lRxMensaje)	
   {
-		oLoraMensaje.lRxMensaje = 0;
-		String cOrdenLora = String(oLoraMensaje.Mensaje).substring(  3 + String(oLoraMensaje.Mensaje).indexOf("-:-"),  String(oLoraMensaje.Mensaje).length() ); //Extraemos los parametros
-		String cDestinatarioLora = String(oLoraMensaje.Mensaje).substring(0, String(oLoraMensaje.Mensaje).indexOf("-:-"));
-		if ( cDestinatarioLora == cDispositivo || cDestinatarioLora =="broadcast" )
-		{
-			if ( cDestinatarioLora =="broadcast" )
-			{ 
-				lBroadcast = 1;										//Ponemos a 1 el flag de broadcast. Si es broadcast no debe haber respuesta del Slave
-			}
-
-     			//*******************************************************************************
-     			//En este punto empieza el bloque de programa particular del dispositivo según la 
-     			//utilización de ordenes recibidas por radio
-     			//Se analiza el mensaje recibido por radio y se actúa en consecuencia
-     			//*******************************************************************************	
-			/*----------------
- 			Contestacion al Master
- 			------------------*/
-			if ( cSalida != String(' ') && !lBroadcast )									//Si hay algo que comunicar y la orden no fue a Broadcast
-			{	
-				StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se le notifica al Lora Remitente
-				#ifdef Display
-					//TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
-					MensajeTxtEnviadoaLora (oLoraMensaje);
-				#endif 
-			}	
-			cSalida = String(' ');	
-			lBroadcast = 0;						
-  }							
-  oMensaje = Mensaje ();		 					 
-  if ( oMensaje.lRxMensaje)										
-  {
-	 oMensaje.lRxMensaje = 0;
-     //*******************************************************************************
-     //En este punto empieza el bloque de programa particular del dispositivo según la 
-     //utilización de ordenes recibidas por Serverpic
-     //Se analiza el mensaje recibido desde Serverpic y se actúa en consecuencia
-     //*******************************************************************************
-  }
+	oLoraMensaje.lRxMensaje = 0;
+	String cOrdenLora = String(oLoraMensaje.Mensaje).substring(  3 + String(oLoraMensaje.Mensaje).indexOf("-:-"),  String(oLoraMensaje.Mensaje).length() ); //Extraemos losparametros
+	String cDestinatarioLora = String(oLoraMensaje.Mensaje).substring(0, String(oLoraMensaje.Mensaje).indexOf("-:-"));
+	if ( cDestinatarioLora == cDispositivo || cDestinatarioLora =="broadcast" )
+	{
+		if ( cDestinatarioLora =="broadcast" )
+		{ 
+			lBroadcast = 1;										//Ponemos a 1 el flag de broadcast. Si es broadcast no debe haber respuesta del Slave
+		}
+    		//*******************************************************************************
+    		//En este punto empieza el bloque de programa particular del dispositivo según la 
+    		//utilización de ordenes recibidas por radio
+    		//Se analiza el mensaje recibido por radio y se actúa en consecuencia
+    		//*******************************************************************************	
+		/*----------------
+ 		Contestacion al Master
+ 		------------------*/
+		if ( cSalida != String(' ') && !lBroadcast )									//Si hay algo que comunicar y la orden no fue a Broadcast
+		{	
+			StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-"+cSalida);		//Se le notifica al Lora Remitente
+			#ifdef Display
+				//TextoEnviadoaLora (cDispositivo+"-:-"+cSalida);
+				MensajeTxtEnviadoaLora (oLoraMensaje);
+			#endif 
+		}	
+		cSalida = String(' ');	
+		lBroadcast = 0;						
+  	}							
+  	oMensaje = Mensaje ();		 					 
+  	if ( oMensaje.lRxMensaje)										
+  	{
+		 oMensaje.lRxMensaje = 0;
+  	   //*******************************************************************************
+  	   //En este punto empieza el bloque de programa particular del dispositivo según la 
+  	   //utilización de ordenes recibidas por Serverpic
+  	   //Se analiza el mensaje recibido desde Serverpic y se actúa en consecuencia
+  	   //*******************************************************************************
+  	}
+  }		
   wdt_reset(); 													
 }
 ```

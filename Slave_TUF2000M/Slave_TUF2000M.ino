@@ -12,7 +12,7 @@
 #include "ServerPic.h"
 #include "IO.h"
 
-#define MODBUS_DEVICE_ID 1
+
 
 //SoftwareSerial swSerial(RX_PIN, TX_PIN);
 
@@ -25,6 +25,7 @@ void setup() {
   	#ifdef Debug																		//Usamos el puereto serie solo para debugar	
 		Serial.begin(9600);																//Si no debugamos quedan libres los pines Tx, Rx para set urilizados
 		Serial.println("Iniciando........");
+		
 	#endif
 	EEPROM.begin(256);																	//Reservamos zona de EEPROM
 
@@ -75,7 +76,9 @@ void setup() {
 	}else{																				//Si no esta
 
 	}
-	
+	Serial.print("Setup: ");
+	Serial.println (nthickness);		
+
 }
 
 
@@ -113,6 +116,8 @@ void loop() {
 			fecha-:-DD-:-MM-:-YYYY-:-HH-:-MM-:-SS.- Actualiza el RTC con los datos transferidos
 			Configura.- Configura el Tuf-2000M
 			ConsumoAcumulado.- Devuelve el consumo acumulado almacenado en el registro  'positive acumulator' (0009) 
+			Calidad.- Devuelve una cadena con los siguientes datos Upstream strength-:-Downstream strength-:-Signal Quality
+			Error.- Devuelve un entero con el codigo de error. Los códigos de error se describen en la Nota 4 del manual
 			Reset.- Resetea el modulo
 	------------------*/
 	if (oLoraMensaje.lRxMensaje)									//Comprobamos si se ha recibido informacion por radio y si es asi le damos prioridad a la radio
@@ -157,17 +162,32 @@ void loop() {
 				}		
 				if (cOrdenLora == "Reset")														//Si se recibe "Reset"
 				{	
+					StringToLora (oLoraMensaje.Remitente+"-:-"+cDispositivo+"-:-Reseteado");	//Se manda por radio para que recoja el master y pueda responder al remitente y Master no repita	
+					delay(500);				
 					Reset();				
 				}									
 				if (cOrdenLora == "Configura")													//Si se recibe "Configura"
 				{	
-					Configura();				
+					Configura();	
+					cSalida = "TUF-2000M Configurado";			
 				}							
 				if (cOrdenLora == "ConsumoAcumulado")											//Si se recibe "ConsumoAcumulado"...
 				{	
 					AcumuladoAgua = ReadPositiveAcumulator();										//Obtenemos el consumo acumulado
 					cSalida = ("medida-:-Jardin-:-"+(String)(AcumuladoAgua));						//Lo enviamos al Master como Medida
 				}	
+				if (cOrdenLora == "Calidad")													//Si se recibe Calidad
+				{
+					cSalida = (String)(ReadUStrength());
+					delay(100);
+					cSalida = cSalida + "-:-" + (String)(ReadDStrength());
+					delay(100);
+					cSalida = cSalida + "-:-" + (String)(ReadQ());
+				}
+				if (cOrdenLora == "Error")														//Si se recibe error
+				{
+					cSalida = (String)(ReadErrorCode());
+				}				
 				if (cOrdenLora == "Master")														//Si se recibe "Master"
 				{	
 					nMiliSegundosTest = millis();												//Reseteamos el contador de Test para evitar reset
@@ -258,5 +278,34 @@ void loop() {
 		//delay(100);
 		//FlowForYearDecimal();
 		//delay(100);
+	
+	
+	//	Serial.print ("Q: ");
+	//	Serial.println(ReadQ());
+	//	delay(100);
+	//	Serial.print ("UStrength: ");
+	//	Serial.println(ReadUStrength());
+	//	delay(100);
+	//	Serial.print ("DStrength: ");
+	//	Serial.println(ReadDStrength());
+
+	/*
+	Serial.println("--------------------");	
+	Serial.println(ReadErrorCode());
+	delay(100);
+	Serial.println("--------------------");	
+	*/
+
+	/*	
+	for ( int x = 90; x<95; x++)
+	{
+		Serial.print("------>");
+		Serial.println(x);
+		LeeRegistrosInt(x);
+		delay(1000);
+	}
+	*/
+		delay(1000);
+
 		//delay(1000);
 }

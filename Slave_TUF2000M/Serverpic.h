@@ -15,7 +15,7 @@
 	//----------------------------------------------
 	//Includes Universales
 	//----------------------------------------------
-	    //Librerias LoRa 32
+	//Librerias LoRa 32
     //Aruino & ESP32
     #include <WebServer.h>
     #include "esp_camera.h"
@@ -106,7 +106,7 @@
 
 	#endif
 
-	#define TUF2000M
+	
 	
 	#ifdef TUF2000M
 		//MBus
@@ -114,8 +114,27 @@
 		#include <ModbusMaster.h>
 
 		//TUF2000M
-		#include "TUF2000M.h"
+		#include <TUF2000M.h>
+
+		#define MODBUS_DEVICE_ID 1
+
+		//Configuracion TUF-2000M
+		int nIdioma = Ingles;
+		int nUnidades = Litros;
+		int nUnidaddeTiempo = Hora;
+		int nFluido = Agua;
+		
+		//Datos tuberia
+		int nOuterDiameter = 180;
+		int nthickness = 1500;
+		int nInnerDiameter = 0;
+		int nMaterial = Cobre;    
+		int nTransducerType =  ClampOnTS2;    
+		int nTransducerMounting = WMethod;               
+		
+		ModbusMaster TUF;
 	#endif
+
 
 
 	//----------------------------
@@ -178,8 +197,13 @@
 	//----------------------------------------------	
 	void SegundosToHHMMSS ( int nSegundosTot );													//Visualiza en pantalla una cantidad de segundos en HH:MM:SS					
 
-
-
+	//----------------------------------------------
+	//Declaracion de funciones para TUF-2000M
+	//----------------------------------------------
+	#ifdef TUF2000M
+		void Configura (void);
+		void ConfiguraPipe(void);
+	#endif
 	//----------------------------------------------
 	//Declaracion de funciones Particulares
 	//----------------------------------------------
@@ -361,6 +385,33 @@
 			MensajeOnTemporizado ( nSegundos, nMinutos, nHoras );
 		#endif	
 	}
-
-	
+	#ifdef TUF2000M
+	/**
+	******************************************************
+	* @brief Configura todos los parametros de la instalación
+	*/
+	void Configura (void)
+	{
+		ConfiguraIdioma (nIdioma);
+		ConfiguraUnidades (nUnidades, nUnidaddeTiempo);
+		ConfiguraPipe();
+  		ConfiguracionSave();
+	}
+	/**
+	******************************************************
+	* @brief Configura los parametros de la tuberia
+	* Diametro exterior de la tuberia, grosor de las paredes de la tuberia, Material, Fluido, tipo de transductor, montaje de los trasductores
+	* Deja en pantalla la distancia que debe haber entre los transductores
+	*/		
+	void ConfiguraPipe (void)
+	{
+  		ConfiguraOuterDiameterPipe (nOuterDiameter, 1);
+  		ConfiguraThicknessPipe (nthickness, 3);
+  		ConfiguraMaterialPipe (nMaterial);
+  		ConfiguraFluidType(nFluido);
+  		ConfiguraTransducerType(nTransducerType);
+  		ConfiguraTransducerMounting(nTransducerMounting);
+  		WindowMenu(MenuTransducerSpacing);                                             //Pantalla Transducer distance mounting
+	}
+	#endif
 #endif
